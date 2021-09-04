@@ -12,7 +12,7 @@ import (
 var m = make(map[int]string)
 
 // MyHandlerGetId is for getting full URL from shortened
-func MyHandlerGetId(w http.ResponseWriter, r *http.Request) {
+func MyHandlerGetID(w http.ResponseWriter, r *http.Request) {
 	requestedID, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil || m[requestedID] == "" {
 		http.Error(w, "Wrong requested ID!", http.StatusBadRequest)

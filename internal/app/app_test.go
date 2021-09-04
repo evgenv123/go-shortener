@@ -83,7 +83,7 @@ func TestMyHandlers(t *testing.T) {
 			w := httptest.NewRecorder()
 			r := chi.NewRouter()
 			// маршрутизация запросов обработчику
-			r.Get("/{id}", MyHandlerGetId)
+			r.Get("/{id}", MyHandlerGetID)
 			r.Post("/", MyHandlerPost)
 			// запускаем сервер
 			r.ServeHTTP(w, request)
@@ -107,7 +107,7 @@ func TestMyHandlers(t *testing.T) {
 func TestHappyPath(t *testing.T) {
 	r := chi.NewRouter()
 	// маршрутизация запросов обработчику
-	r.Get("/{id}", MyHandlerGetId)
+	r.Get("/{id}", MyHandlerGetID)
 	r.Post("/", MyHandlerPost)
 	urlToShorten := "https://mail.ru"
 
@@ -132,6 +132,7 @@ func TestHappyPath(t *testing.T) {
 	request = httptest.NewRequest("GET", "/"+reqID, nil)
 	r.ServeHTTP(w2, request)
 	res2 := w2.Result()
+	defer res2.Body.Close()
 	assert.Equal(t, http.StatusTemporaryRedirect, res2.StatusCode, "Wrong status code")
 	unshortenedURL, err := res2.Location()
 	assert.NoError(t, err, "Fail reading Location")
