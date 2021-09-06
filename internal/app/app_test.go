@@ -74,6 +74,17 @@ func TestMyHandlers(t *testing.T) {
 				response: "Wrong URL format!\n",
 			},
 		},
+		{
+			name: "Test POST new endpoint",
+			inp: input{
+				uri:    "/api/shorten",
+				method: http.MethodPost,
+				body:   "{\"url\": \"https://mail.ru\"}",
+			},
+			outp: output{
+				code:     http.StatusCreated,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -84,6 +95,7 @@ func TestMyHandlers(t *testing.T) {
 			r := chi.NewRouter()
 			// маршрутизация запросов обработчику
 			r.Get("/{id}", MyHandlerGetID)
+			r.Post("/api/shorten", MyHandlerShorten)
 			r.Post("/", MyHandlerPost)
 			// запускаем сервер
 			r.ServeHTTP(w, request)
@@ -108,6 +120,7 @@ func TestHappyPath(t *testing.T) {
 	r := chi.NewRouter()
 	// маршрутизация запросов обработчику
 	r.Get("/{id}", MyHandlerGetID)
+	r.Post("/api/shorten", MyHandlerShorten)
 	r.Post("/", MyHandlerPost)
 	urlToShorten := "https://mail.ru"
 

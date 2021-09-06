@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"math/rand"
@@ -10,7 +11,19 @@ import (
 )
 
 var m = make(map[int]string)
+type InputURL struct {
+	URL	string	`json:"url"`
+}
+type OutputShortURL struct {
+	Result	string	`json:"result"`
+}
 
+func shortenURL(url string) OutputShortURL{
+	// Generating ID for link (b)
+	idForLink := rand.Intn(999999)
+	m[idForLink] = url
+	return OutputShortURL{Result: "http://localhost:8080/" + strconv.Itoa(idForLink)}
+}
 // MyHandlerGetId is for getting full URL from shortened
 func MyHandlerGetID(w http.ResponseWriter, r *http.Request) {
 	requestedID, err := strconv.Atoi(chi.URLParam(r, "id"))
@@ -35,12 +48,31 @@ func MyHandlerPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Wrong URL format!", http.StatusBadRequest)
 		return
 	}
-	// Generating ID for link (b)
-	idForLink := rand.Intn(999999)
-	m[idForLink] = string(b)
-
 	w.WriteHeader(http.StatusCreated)
-	_, err = w.Write([]byte("http://localhost:8080/" + strconv.Itoa(idForLink)))
+	_, err = w.Write([]byte(shortenURL(string(b)).Result))
+	if err != nil {
+		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
+		return
+	}
+}
+
+// MyHandlerShorten is a handler for /api/shorten endpoint
+func MyHandlerShorten(w http.ResponseWriter, r *http.Request) {
+	// reading original link body
+	var input InputURL
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Cannot decode request body!", http.StatusInternalServerError)
+		return
+	}
+	// Checking for valid URL
+	_, err := url.ParseRequestURI(input.URL)
+	if err != nil {
+		http.Error(w, "Wrong URL format!", http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	err = json.NewEncoder(w).Encode(shortenURL(input.URL))
 	if err != nil {
 		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
 		return
