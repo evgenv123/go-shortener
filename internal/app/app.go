@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"github.com/evgenv123/go-shortener/internal/config"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"math/rand"
@@ -11,19 +12,21 @@ import (
 )
 
 var m = make(map[int]string)
+
 type InputURL struct {
-	URL	string	`json:"url"`
+	URL string `json:"url"`
 }
 type OutputShortURL struct {
-	Result	string	`json:"result"`
+	Result string `json:"result"`
 }
 
-func shortenURL(url string) OutputShortURL{
+func shortenURL(url string) OutputShortURL {
 	// Generating ID for link (b)
 	idForLink := rand.Intn(999999)
 	m[idForLink] = url
-	return OutputShortURL{Result: "http://localhost:8080/" + strconv.Itoa(idForLink)}
+	return OutputShortURL{Result: config.BaseURL + strconv.Itoa(idForLink)}
 }
+
 // MyHandlerGetId is for getting full URL from shortened
 func MyHandlerGetID(w http.ResponseWriter, r *http.Request) {
 	requestedID, err := strconv.Atoi(chi.URLParam(r, "id"))

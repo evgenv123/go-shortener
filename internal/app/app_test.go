@@ -82,7 +82,7 @@ func TestMyHandlers(t *testing.T) {
 				body:   "{\"url\": \"https://mail.ru\"}",
 			},
 			outp: output{
-				code:     http.StatusCreated,
+				code: http.StatusCreated,
 			},
 		},
 	}
@@ -116,6 +116,7 @@ func TestMyHandlers(t *testing.T) {
 	}
 }
 
+// TODO: Include HappyPath to reguar tests
 func TestHappyPath(t *testing.T) {
 	r := chi.NewRouter()
 	// маршрутизация запросов обработчику
