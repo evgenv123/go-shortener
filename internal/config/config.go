@@ -17,5 +17,5 @@ func getEnv(key string, defaultVal string) string {
 
 func Init() {
 	ServerAddr = getEnv("SERVER_ADDRESS", "localhost:8080")
-	BaseURL = getEnv("BASE_URL", "http://localhost:8080/")
+	BaseURL = getEnv("BASE_URL", "http://localhost:8080")
 }

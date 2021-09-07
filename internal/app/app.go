@@ -24,7 +24,7 @@ func shortenURL(url string) OutputShortURL {
 	// Generating ID for link (b)
 	idForLink := rand.Intn(999999)
 	m[idForLink] = url
-	return OutputShortURL{Result: config.BaseURL + strconv.Itoa(idForLink)}
+	return OutputShortURL{Result: config.BaseURL + "/" + strconv.Itoa(idForLink)}
 }
 
 // MyHandlerGetId is for getting full URL from shortened
