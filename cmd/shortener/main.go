@@ -9,7 +9,8 @@ import (
 )
 
 func init() {
-	config.Init()
+	config.InitEnv()
+	app.ReadDBFromFile()
 }
 
 func main() {

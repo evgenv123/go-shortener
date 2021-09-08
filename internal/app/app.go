@@ -1,18 +1,24 @@
 package app
 
 import (
+	"encoding/gob"
 	"encoding/json"
+	"fmt"
 	"github.com/evgenv123/go-shortener/internal/config"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 )
 
-var m = make(map[int]string)
+var DB = ShortenedURLs{make(map[int]string)}
 
+type ShortenedURLs struct {
+	URLMap map[int]string
+}
 type InputURL struct {
 	URL string `json:"url"`
 }
@@ -23,17 +29,18 @@ type OutputShortURL struct {
 func shortenURL(url string) OutputShortURL {
 	// Generating ID for link (b)
 	idForLink := rand.Intn(999999)
-	m[idForLink] = url
+	DB.URLMap[idForLink] = url
+	WriteDBToFile()
 	return OutputShortURL{Result: config.BaseURL + "/" + strconv.Itoa(idForLink)}
 }
 
 // MyHandlerGetId is for getting full URL from shortened
 func MyHandlerGetID(w http.ResponseWriter, r *http.Request) {
 	requestedID, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil || m[requestedID] == "" {
+	if err != nil || DB.URLMap[requestedID] == "" {
 		http.Error(w, "Wrong requested ID!", http.StatusBadRequest)
 	} else {
-		http.Redirect(w, r, m[requestedID], http.StatusTemporaryRedirect)
+		http.Redirect(w, r, DB.URLMap[requestedID], http.StatusTemporaryRedirect)
 	}
 }
 
@@ -80,4 +87,31 @@ func MyHandlerShorten(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
 		return
 	}
+}
+func WriteDBToFile() {
+	// create a file
+	dataFile, err := os.Create(config.FileStorage)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	// serialize the data
+	dataEncoder := gob.NewEncoder(dataFile)
+	dataEncoder.Encode(DB)
+
+	defer dataFile.Close()
+}
+func ReadDBFromFile() {
+	// open data file
+	dataFile, err := os.Open(config.FileStorage)
+	if err != nil {
+		return
+	}
+
+	dataDecoder := gob.NewDecoder(dataFile)
+	err = dataDecoder.Decode(&DB)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer dataFile.Close()
 }

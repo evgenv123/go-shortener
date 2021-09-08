@@ -116,7 +116,7 @@ func TestMyHandlers(t *testing.T) {
 	}
 }
 
-// TODO: Include HappyPath to reguar tests
+// TODO: Include HappyPath to regular tests
 func TestHappyPath(t *testing.T) {
 	r := chi.NewRouter()
 	// маршрутизация запросов обработчику
