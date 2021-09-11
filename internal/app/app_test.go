@@ -1,11 +1,13 @@
 package app
 
 import (
+	"github.com/evgenv123/go-shortener/internal/config"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
@@ -86,7 +88,9 @@ func TestMyHandlers(t *testing.T) {
 			},
 		},
 	}
-
+	config.BaseURL = "http://localhost:8080"
+	config.FileStorage = "urlStorage_test.gob"
+	config.ServerAddr = "localhost:8080"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.inp.method, tt.inp.uri, strings.NewReader(tt.inp.body))
@@ -114,10 +118,15 @@ func TestMyHandlers(t *testing.T) {
 			}
 		})
 	}
+	assert.NoError(t, os.Remove(config.FileStorage), "Cannot remove temp file storage!")
 }
 
 // TODO: Include HappyPath to regular tests
 func TestHappyPath(t *testing.T) {
+	config.BaseURL = "http://localhost:8080"
+	config.FileStorage = "urlStorage_test.gob"
+	config.ServerAddr = "localhost:8080"
+
 	r := chi.NewRouter()
 	// маршрутизация запросов обработчику
 	r.Get("/{id}", MyHandlerGetID)
@@ -139,8 +148,10 @@ func TestHappyPath(t *testing.T) {
 	assert.NoError(t, err, "Fail reading body")
 	// fmt.Println(string(resBody))
 
+	parsedURL := strings.Split(string(resBody), "/")
+	assert.GreaterOrEqual(t, len(parsedURL), 4, "Cannot parse body: "+string(resBody))
 	// Проверяем обратное преобразование (из сокращенной ссылки)
-	reqID := strings.Split(string(resBody), "/")[3]
+	reqID := parsedURL[3]
 	// создаём новый Recorder
 	w2 := httptest.NewRecorder()
 	request = httptest.NewRequest("GET", "/"+reqID, nil)
@@ -151,4 +162,5 @@ func TestHappyPath(t *testing.T) {
 	unshortenedURL, err := res2.Location()
 	assert.NoError(t, err, "Fail reading Location")
 	assert.Equal(t, urlToShorten, unshortenedURL.String(), "Wrong unshortened URL!")
+	assert.NoError(t, os.Remove(config.FileStorage), "Cannot remove temp file storage!")
 }
