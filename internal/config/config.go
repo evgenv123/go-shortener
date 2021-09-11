@@ -1,6 +1,7 @@
 package config
 
 import (
+	"flag"
 	"os"
 )
 
@@ -19,7 +20,20 @@ func getEnv(key string, defaultVal string) string {
 }
 
 func InitEnv() {
-	ServerAddr = getEnv("SERVER_ADDRESS", "localhost:8080")
-	BaseURL = getEnv("BASE_URL", "http://localhost:8080")
-	FileStorage = getEnv("FILE_STORAGE_PATH", "urlStorage.gob")
+	// Checking flags first
+	flag.StringVar(&ServerAddr, "a", "", "Server address")
+	flag.StringVar(&BaseURL, "b", "", "Base URL")
+	flag.StringVar(&FileStorage, "f", "", "Storage filename")
+	flag.Parse()
+
+	// If no flags checking ENV. If no ENV - setting defaults
+	if ServerAddr == "" {
+		ServerAddr = getEnv("SERVER_ADDRESS", "localhost:8080")
+	}
+	if BaseURL == "" {
+		BaseURL = getEnv("BASE_URL", "http://localhost:8080")
+	}
+	if FileStorage == "" {
+		FileStorage = getEnv("FILE_STORAGE_PATH", "urlStorage.gob")
+	}
 }
