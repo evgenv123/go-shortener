@@ -1,39 +1,47 @@
 package config
 
 import (
-	"flag"
+	"errors"
+	"net/url"
 	"os"
+
+	"github.com/alexflint/go-arg"
+	"github.com/caarlos0/env/v6"
 )
 
-var (
-	ServerAddr  string
-	BaseURL     string
-	FileStorage string
-)
-
-// Simple helper function to read an environment or return a default value
-func getEnv(key string, defaultVal string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return defaultVal
+type Config struct {
+	ServerAddr  string `arg:"-a" help:"Server address" env:"SERVER_ADDRESS" envDefault:"localhost:8080"`
+	BaseURL     string `arg:"-b" help:"Base URL" env:"BASE_URL" envDefault:"http://localhost:8080"`
+	FileStorage string `arg:"-f" help:"Storage filename" env:"FILE_STORAGE_PATH" envDefault:"urlStorage.gob"`
 }
 
-func InitEnv() {
-	// Checking flags first
-	flag.StringVar(&ServerAddr, "a", "", "Server address")
-	flag.StringVar(&BaseURL, "b", "", "Base URL")
-	flag.StringVar(&FileStorage, "f", "", "Storage filename")
-	flag.Parse()
+func (c Config) Validate() error {
+	_, err := os.Stat(c.FileStorage)
+	if err != nil && !os.IsNotExist(err) {
+		return errors.New("wrong file name")
+	}
+	_, err = url.Parse(c.ServerAddr)
+	if err != nil {
+		return errors.New("wrong server address")
+	}
+	_, err = url.ParseRequestURI(c.BaseURL)
+	if err != nil {
+		return errors.New("wrong base url")
+	}
+	return nil
+}
 
-	// If no flags checking ENV. If no ENV - setting defaults
-	if ServerAddr == "" {
-		ServerAddr = getEnv("SERVER_ADDRESS", "localhost:8080")
+func NewConfig() (Config, error) {
+	var conf Config
+	// Checking flags first, then redefining them by ENV
+	arg.MustParse(&conf)
+	err := env.Parse(&conf)
+	if err != nil {
+		return Config{
+			"localhost:8080",
+			"http://localhost:8080",
+			"urlStorage.gob",
+		}, nil
 	}
-	if BaseURL == "" {
-		BaseURL = getEnv("BASE_URL", "http://localhost:8080")
-	}
-	if FileStorage == "" {
-		FileStorage = getEnv("FILE_STORAGE_PATH", "urlStorage.gob")
-	}
+	return conf, conf.Validate()
 }

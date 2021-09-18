@@ -1,117 +1,13 @@
 package app
 
 import (
-	"encoding/gob"
-	"encoding/json"
-	"fmt"
 	"github.com/evgenv123/go-shortener/internal/config"
-	"github.com/go-chi/chi/v5"
-	"io"
-	"math/rand"
-	"net/http"
-	"net/url"
-	"os"
-	"strconv"
 )
 
-var DB = ShortenedURLs{make(map[int]string)}
-
-type ShortenedURLs struct {
-	URLMap map[int]string
-}
-type InputURL struct {
-	URL string `json:"url"`
-}
-type OutputShortURL struct {
-	Result string `json:"result"`
-}
-
-func shortenURL(url string) OutputShortURL {
-	// Generating ID for link (b)
-	idForLink := rand.Intn(999999)
-	DB.URLMap[idForLink] = url
-	WriteDBToFile()
-	return OutputShortURL{Result: config.BaseURL + "/" + strconv.Itoa(idForLink)}
-}
-
-// MyHandlerGetId is for getting full URL from shortened
-func MyHandlerGetID(w http.ResponseWriter, r *http.Request) {
-	requestedID, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil || DB.URLMap[requestedID] == "" {
-		http.Error(w, "Wrong requested ID!", http.StatusBadRequest)
-	} else {
-		http.Redirect(w, r, DB.URLMap[requestedID], http.StatusTemporaryRedirect)
+func Init(c config.Config) error {
+	appConf = c
+	if err := readDBFromFile(); err != nil {
+		return err
 	}
-}
-
-// MyHandlerPost is for shortening full URL and saving info to DB
-func MyHandlerPost(w http.ResponseWriter, r *http.Request) {
-	// reading original link body
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Cannot read request body!", http.StatusInternalServerError)
-		return
-	}
-	// Checking for valid URL
-	_, err = url.ParseRequestURI(string(b))
-	if err != nil {
-		http.Error(w, "Wrong URL format!", http.StatusBadRequest)
-		return
-	}
-	w.WriteHeader(http.StatusCreated)
-	_, err = w.Write([]byte(shortenURL(string(b)).Result))
-	if err != nil {
-		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
-		return
-	}
-}
-
-// MyHandlerShorten is a handler for /api/shorten endpoint
-func MyHandlerShorten(w http.ResponseWriter, r *http.Request) {
-	// reading original link body
-	var input InputURL
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Cannot decode request body!", http.StatusInternalServerError)
-		return
-	}
-	// Checking for valid URL
-	_, err := url.ParseRequestURI(input.URL)
-	if err != nil {
-		http.Error(w, "Wrong URL format!", http.StatusBadRequest)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	err = json.NewEncoder(w).Encode(shortenURL(input.URL))
-	if err != nil {
-		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
-		return
-	}
-}
-func WriteDBToFile() {
-	// create a file
-	dataFile, err := os.Create(config.FileStorage)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	// serialize the data
-	dataEncoder := gob.NewEncoder(dataFile)
-	dataEncoder.Encode(DB)
-
-	defer dataFile.Close()
-}
-func ReadDBFromFile() {
-	// open data file
-	dataFile, err := os.Open(config.FileStorage)
-	if err != nil {
-		return
-	}
-
-	dataDecoder := gob.NewDecoder(dataFile)
-	err = dataDecoder.Decode(&DB)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer dataFile.Close()
+	return nil
 }
