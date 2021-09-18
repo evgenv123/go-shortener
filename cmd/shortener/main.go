@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/evgenv123/go-shortener/internal/app"
 	"github.com/evgenv123/go-shortener/internal/config"
 	"github.com/go-chi/chi/v5"
@@ -16,7 +17,7 @@ import (
 func startHTTP(srv *http.Server) {
 	// Error ErrServerClosed is thrown during graceful shutdown
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("listen: %s\n", err)
+		log.Fatalf("Listen: %s\n", err)
 	}
 }
 
@@ -42,6 +43,8 @@ func main() {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
 	// Starting web server in background
+	jsonConf, _ := json.Marshal(conf)
+	log.Println("Starting web server:", string(jsonConf))
 	go startHTTP(srv)
 	// Waiting signal for shutdown
 	<-done
@@ -49,9 +52,9 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("shutdown error: %v\n", err)
+		log.Fatalf("Shutdown error: %v\n", err)
 	} else {
-		log.Printf("gracefully stopped\n")
+		log.Printf("Gracefully stopped\n")
 	}
 	// Writing DB to file on exit
 	if err = app.WriteDBToFile(); err != nil {

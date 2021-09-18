@@ -9,9 +9,9 @@ import (
 )
 
 type Config struct {
-	ServerAddr  string `arg:"-a" help:"Server address"`
-	BaseURL     string `arg:"-b" help:"Base URL"`
-	FileStorage string `arg:"-f" help:"Storage filename"`
+	ServerAddr  string `arg:"-a,--,env:SERVER_ADDRESS" help:"Server address" default:"localhost:8080"`
+	BaseURL     string `arg:"-b,--,env:BASE_URL" help:"Base URL" default:"http://localhost:8080"`
+	FileStorage string `arg:"-f,--,env:FILE_STORAGE_PATH" help:"Storage filename" default:"urlStorage.gob"`
 }
 
 func (c Config) Validate() error {
@@ -30,29 +30,10 @@ func (c Config) Validate() error {
 	return nil
 }
 
-// Simple helper function to read an environment or return a default value
-func getEnv(key string, defaultVal string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return defaultVal
-}
-
 func NewConfig() (Config, error) {
 	var conf Config
-	// Checking flags first
+	// Checking flags & ENV
 	arg.MustParse(&conf)
-
-	// If no flags checking ENV. If no ENV - setting defaults
-	if conf.ServerAddr == "" {
-		conf.ServerAddr = getEnv("SERVER_ADDRESS", "localhost:8080")
-	}
-	if conf.BaseURL == "" {
-		conf.BaseURL = getEnv("BASE_URL", "http://localhost:8080")
-	}
-	if conf.FileStorage == "" {
-		conf.FileStorage = getEnv("FILE_STORAGE_PATH", "urlStorage.gob")
-	}
 
 	return conf, conf.Validate()
 }
