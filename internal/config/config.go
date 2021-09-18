@@ -6,13 +6,12 @@ import (
 	"os"
 
 	"github.com/alexflint/go-arg"
-	"github.com/caarlos0/env/v6"
 )
 
 type Config struct {
-	ServerAddr  string `arg:"-a" help:"Server address" env:"SERVER_ADDRESS" envDefault:"localhost:8080"`
-	BaseURL     string `arg:"-b" help:"Base URL" env:"BASE_URL" envDefault:"http://localhost:8080"`
-	FileStorage string `arg:"-f" help:"Storage filename" env:"FILE_STORAGE_PATH" envDefault:"urlStorage.gob"`
+	ServerAddr  string `arg:"-a" help:"Server address"`
+	BaseURL     string `arg:"-b" help:"Base URL"`
+	FileStorage string `arg:"-f" help:"Storage filename"`
 }
 
 func (c Config) Validate() error {
@@ -31,17 +30,29 @@ func (c Config) Validate() error {
 	return nil
 }
 
+// Simple helper function to read an environment or return a default value
+func getEnv(key string, defaultVal string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultVal
+}
+
 func NewConfig() (Config, error) {
 	var conf Config
-	// Checking flags first, then redefining them by ENV
+	// Checking flags first
 	arg.MustParse(&conf)
-	err := env.Parse(&conf)
-	if err != nil {
-		return Config{
-			"localhost:8080",
-			"http://localhost:8080",
-			"urlStorage.gob",
-		}, nil
+
+	// If no flags checking ENV. If no ENV - setting defaults
+	if conf.ServerAddr == "" {
+		conf.ServerAddr = getEnv("SERVER_ADDRESS", "localhost:8080")
 	}
+	if conf.BaseURL == "" {
+		conf.BaseURL = getEnv("BASE_URL", "http://localhost:8080")
+	}
+	if conf.FileStorage == "" {
+		conf.FileStorage = getEnv("FILE_STORAGE_PATH", "urlStorage.gob")
+	}
+
 	return conf, conf.Validate()
 }

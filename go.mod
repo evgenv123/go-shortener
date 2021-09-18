@@ -4,7 +4,6 @@ go 1.17
 
 require (
 	github.com/alexflint/go-arg v1.4.2
-	github.com/caarlos0/env/v6 v6.7.1
 	github.com/go-chi/chi/v5 v5.0.4
 	github.com/stretchr/testify v1.7.0
 )

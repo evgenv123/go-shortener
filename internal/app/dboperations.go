@@ -15,7 +15,7 @@ func WriteDBToFile() error {
 	// serialize the data
 	dataEncoder := gob.NewEncoder(dataFile)
 	DB.mu.RLock()
-	err = dataEncoder.Encode(DB)
+	err = dataEncoder.Encode(DB.URLMap)
 	DB.mu.RUnlock()
 	if err != nil {
 		return err
@@ -39,7 +39,7 @@ func readDBFromFile() error {
 
 	dataDecoder := gob.NewDecoder(dataFile)
 	DB.mu.Lock()
-	err = dataDecoder.Decode(&DB)
+	err = dataDecoder.Decode(&DB.URLMap)
 	DB.mu.Unlock()
 	if err != nil {
 		return err
