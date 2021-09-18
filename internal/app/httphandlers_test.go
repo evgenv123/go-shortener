@@ -1,12 +1,12 @@
 package app
 
 import (
+	"github.com/evgenv123/go-shortener/internal/config"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 )
@@ -87,9 +87,12 @@ func TestMyHandlers(t *testing.T) {
 			},
 		},
 	}
-	appConf.BaseURL = "http://localhost:8080"
-	appConf.FileStorage = "urlStorage_test.gob"
-	appConf.ServerAddr = "localhost:8080"
+	assert.NoError(t, Init(config.Config{
+		BaseURL:     "http://localhost:8080",
+		FileStorage: "urlStorage_test.gob",
+		ServerAddr:  "localhost:8080",
+	}), "Error initializing environment")
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.inp.method, tt.inp.uri, strings.NewReader(tt.inp.body))
@@ -117,14 +120,17 @@ func TestMyHandlers(t *testing.T) {
 			}
 		})
 	}
-	assert.NoError(t, os.Remove(appConf.FileStorage), "Cannot remove temp file storage!")
+	// There is no file creation during test
+	// assert.NoError(t, os.Remove(appConf.FileStorage), "Cannot remove temp file storage!")
 }
 
 // TODO: Include HappyPath to regular tests
 func TestHappyPath(t *testing.T) {
-	appConf.BaseURL = "http://localhost:8080"
-	appConf.FileStorage = "urlStorage_test.gob"
-	appConf.ServerAddr = "localhost:8080"
+	assert.NoError(t, Init(config.Config{
+		BaseURL:     "http://localhost:8080",
+		FileStorage: "urlStorage_test.gob",
+		ServerAddr:  "localhost:8080",
+	}), "Error initializing environment")
 
 	r := chi.NewRouter()
 	// маршрутизация запросов обработчику
@@ -161,5 +167,6 @@ func TestHappyPath(t *testing.T) {
 	unshortenedURL, err := res2.Location()
 	assert.NoError(t, err, "Fail reading Location")
 	assert.Equal(t, urlToShorten, unshortenedURL.String(), "Wrong unshortened URL!")
-	assert.NoError(t, os.Remove(appConf.FileStorage), "Cannot remove temp file storage!")
+	// There is no file creation during test
+	// assert.NoError(t, os.Remove(appConf.FileStorage), "Cannot remove temp file storage!")
 }

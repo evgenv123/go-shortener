@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func startHttp(srv *http.Server) {
+func startHTTP(srv *http.Server) {
 	// Error ErrServerClosed is thrown during graceful shutdown
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("listen: %s\n", err)
@@ -42,7 +42,7 @@ func main() {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
 	// Starting web server in background
-	go startHttp(srv)
+	go startHTTP(srv)
 	// Waiting signal for shutdown
 	<-done
 	// Giving server 5 sec to shut down

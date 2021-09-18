@@ -2,7 +2,6 @@ package app
 
 import (
 	"encoding/gob"
-	"fmt"
 	"os"
 )
 
@@ -29,13 +28,12 @@ func WriteDBToFile() error {
 func readDBFromFile() error {
 	// open data file
 	dataFile, err := os.Open(appConf.FileStorage)
+	// If file does not exist there is no error
+	if os.IsNotExist(err) {
+		return nil
+	}
 	if err != nil {
-		switch err {
-		case os.ErrNotExist:
-			return nil
-		default:
-			return err
-		}
+		return err
 	}
 	defer dataFile.Close()
 
@@ -44,7 +42,6 @@ func readDBFromFile() error {
 	err = dataDecoder.Decode(&DB)
 	DB.mu.Unlock()
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	return nil
