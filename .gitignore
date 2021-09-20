@@ -21,3 +21,6 @@ vendor/
 # IDEs directories
 .idea
 .vscode
+
+# GOB data files
+.gob

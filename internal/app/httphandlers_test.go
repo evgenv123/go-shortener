@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/evgenv123/go-shortener/internal/config"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -74,7 +75,23 @@ func TestMyHandlers(t *testing.T) {
 				response: "Wrong URL format!\n",
 			},
 		},
+		{
+			name: "Test POST new endpoint",
+			inp: input{
+				uri:    "/api/shorten",
+				method: http.MethodPost,
+				body:   "{\"url\": \"https://mail.ru\"}",
+			},
+			outp: output{
+				code: http.StatusCreated,
+			},
+		},
 	}
+	assert.NoError(t, Init(config.Config{
+		BaseURL:     "http://localhost:8080",
+		FileStorage: "urlStorage_test.gob",
+		ServerAddr:  "localhost:8080",
+	}), "Error initializing environment")
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -84,6 +101,7 @@ func TestMyHandlers(t *testing.T) {
 			r := chi.NewRouter()
 			// маршрутизация запросов обработчику
 			r.Get("/{id}", MyHandlerGetID)
+			r.Post("/api/shorten", MyHandlerShorten)
 			r.Post("/", MyHandlerPost)
 			// запускаем сервер
 			r.ServeHTTP(w, request)
@@ -102,12 +120,22 @@ func TestMyHandlers(t *testing.T) {
 			}
 		})
 	}
+	// There is no file creation during test
+	// assert.NoError(t, os.Remove(appConf.FileStorage), "Cannot remove temp file storage!")
 }
 
+// TODO: Include HappyPath to regular tests
 func TestHappyPath(t *testing.T) {
+	assert.NoError(t, Init(config.Config{
+		BaseURL:     "http://localhost:8080",
+		FileStorage: "urlStorage_test.gob",
+		ServerAddr:  "localhost:8080",
+	}), "Error initializing environment")
+
 	r := chi.NewRouter()
 	// маршрутизация запросов обработчику
 	r.Get("/{id}", MyHandlerGetID)
+	r.Post("/api/shorten", MyHandlerShorten)
 	r.Post("/", MyHandlerPost)
 	urlToShorten := "https://mail.ru"
 
@@ -125,8 +153,10 @@ func TestHappyPath(t *testing.T) {
 	assert.NoError(t, err, "Fail reading body")
 	// fmt.Println(string(resBody))
 
+	parsedURL := strings.Split(string(resBody), "/")
+	assert.GreaterOrEqual(t, len(parsedURL), 4, "Cannot parse body: "+string(resBody))
 	// Проверяем обратное преобразование (из сокращенной ссылки)
-	reqID := strings.Split(string(resBody), "/")[3]
+	reqID := parsedURL[3]
 	// создаём новый Recorder
 	w2 := httptest.NewRecorder()
 	request = httptest.NewRequest("GET", "/"+reqID, nil)
@@ -137,4 +167,6 @@ func TestHappyPath(t *testing.T) {
 	unshortenedURL, err := res2.Location()
 	assert.NoError(t, err, "Fail reading Location")
 	assert.Equal(t, urlToShorten, unshortenedURL.String(), "Wrong unshortened URL!")
+	// There is no file creation during test
+	// assert.NoError(t, os.Remove(appConf.FileStorage), "Cannot remove temp file storage!")
 }
