@@ -9,8 +9,8 @@ var appConf config.Config
 var DB = ShortenedURLs{URLMap: make(map[int]string)}
 
 type ShortenedURLs struct {
+	sync.RWMutex
 	URLMap map[int]string
-	mu     sync.RWMutex
 }
 type InputURL struct {
 	URL string `json:"url"`

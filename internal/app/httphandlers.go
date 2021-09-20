@@ -12,13 +12,13 @@ import (
 // MyHandlerGetId is for getting full URL from shortened
 func MyHandlerGetID(w http.ResponseWriter, r *http.Request) {
 	requestedID, err := strconv.Atoi(chi.URLParam(r, "id"))
-	DB.mu.RLock()
+	DB.RLock()
 	if err != nil || DB.URLMap[requestedID] == "" {
 		http.Error(w, "Wrong requested ID!", http.StatusBadRequest)
 	} else {
 		http.Redirect(w, r, DB.URLMap[requestedID], http.StatusTemporaryRedirect)
 	}
-	DB.mu.RUnlock()
+	DB.RUnlock()
 }
 
 // MyHandlerPost is for shortening full URL and saving info to DB

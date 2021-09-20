@@ -8,7 +8,7 @@ import (
 func shortenURL(url string) OutputShortURL {
 	// Generating ID for link (b)
 	var idForLink int
-	DB.mu.Lock()
+	DB.Lock()
 	// Check on duplicate IDs
 	for {
 		idForLink = rand.Intn(999999)
@@ -19,7 +19,7 @@ func shortenURL(url string) OutputShortURL {
 		}
 	}
 	DB.URLMap[idForLink] = url
-	DB.mu.Unlock()
+	DB.Unlock()
 
 	return OutputShortURL{Result: appConf.BaseURL + "/" + strconv.Itoa(idForLink)}
 }
