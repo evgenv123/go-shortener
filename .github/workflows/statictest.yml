@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - increments4567
+      - sprint3
 
 jobs:
 

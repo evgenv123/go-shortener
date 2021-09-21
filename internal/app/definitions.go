@@ -2,6 +2,8 @@ package app
 
 import (
 	"github.com/evgenv123/go-shortener/internal/config"
+	"io"
+	"net/http"
 	"sync"
 )
 
@@ -17,4 +19,9 @@ type InputURL struct {
 }
 type OutputShortURL struct {
 	Result string `json:"result"`
+}
+
+type gzipWriter struct {
+	http.ResponseWriter
+	Writer io.Writer
 }

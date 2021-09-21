@@ -15,7 +15,7 @@ import (
 )
 
 func startHTTP(srv *http.Server) {
-	// Error ErrServerClosed is thrown during graceful shutdown
+	// Error ErrServerClosed is thrown during graceful shutdown, so we consider it is not error
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Listen: %s\n", err)
 	}
@@ -37,7 +37,7 @@ func main() {
 	r.Post("/", app.MyHandlerPost)
 	srv := &http.Server{
 		Addr:    conf.ServerAddr,
-		Handler: r,
+		Handler: app.GZipHandler(r),
 	}
 	// Creating interrupt channel
 	done := make(chan os.Signal, 1)
