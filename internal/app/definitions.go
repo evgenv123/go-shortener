@@ -25,3 +25,8 @@ type gzipWriter struct {
 	http.ResponseWriter
 	Writer io.Writer
 }
+
+type gzipReader struct {
+	http.Request
+	Reader io.Reader
+}
