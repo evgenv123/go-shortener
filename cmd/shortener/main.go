@@ -33,11 +33,12 @@ func main() {
 	r := chi.NewRouter()
 	// маршрутизация запросов обработчику
 	r.Get("/{id}", app.MyHandlerGetID)
+	r.Get("/user/urls", app.MyHandlerListUrls)
 	r.Post("/api/shorten", app.MyHandlerShorten)
 	r.Post("/", app.MyHandlerPost)
 	srv := &http.Server{
 		Addr:    conf.ServerAddr,
-		Handler: app.GZipReadHandler(app.GZipWriteHandler(r)),
+		Handler: app.Conveyor(r, app.ParseCookies, app.GZipReadHandler, app.GZipWriteHandler),
 	}
 	// Creating interrupt channel
 	done := make(chan os.Signal, 1)

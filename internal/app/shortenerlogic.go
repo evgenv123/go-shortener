@@ -5,6 +5,11 @@ import (
 	"strconv"
 )
 
+// getShortenedURL returns full short URL including server address (using short url id as input)
+func getShortenedURL(shortID int) string {
+	return appConf.BaseURL + "/" + strconv.Itoa(shortID)
+}
+
 func shortenURL(url string) OutputShortURL {
 	// Generating ID for link (b)
 	var idForLink int
@@ -18,8 +23,8 @@ func shortenURL(url string) OutputShortURL {
 			break
 		}
 	}
-	DB.URLMap[idForLink] = url
+	DB.URLMap[idForLink] = MappedURL{url, 123}
 	DB.Unlock()
 
-	return OutputShortURL{Result: appConf.BaseURL + "/" + strconv.Itoa(idForLink)}
+	return OutputShortURL{Result: getShortenedURL(idForLink)}
 }

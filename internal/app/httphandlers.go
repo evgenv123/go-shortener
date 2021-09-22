@@ -1,73 +1,44 @@
 package app
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 )
-
-func (w gzipWriter) Write(b []byte) (int, error) {
-	return w.Writer.Write(b)
-}
-
-func GZipWriteHandler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// проверяем, что клиент поддерживает gzip-сжатие
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		// создаём gzip.Writer поверх текущего w
-		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-		if err != nil {
-			io.WriteString(w, err.Error())
-			return
-		}
-		defer gz.Close()
-
-		w.Header().Set("Content-Encoding", "gzip")
-		// передаём обработчику страницы переменную типа gzipWriter для вывода данных
-		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
-	})
-}
-
-func GZipReadHandler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// проверяем, что клиент отправил сжатый gzip-запрос
-		if !strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		// создаём gzip.Reader
-		gz, err := gzip.NewReader(r.Body)
-
-		if err != nil && err != io.EOF {
-			io.WriteString(w, err.Error())
-			return
-		}
-		r.Body = gz
-
-		next.ServeHTTP(w, r)
-	})
-}
 
 // MyHandlerGetId is for getting full URL from shortened
 func MyHandlerGetID(w http.ResponseWriter, r *http.Request) {
 	requestedID, err := strconv.Atoi(chi.URLParam(r, "id"))
 	DB.RLock()
-	if err != nil || DB.URLMap[requestedID] == "" {
+	if err != nil || DB.URLMap[requestedID].URL == "" {
 		http.Error(w, "Wrong requested ID!", http.StatusBadRequest)
 	} else {
-		http.Redirect(w, r, DB.URLMap[requestedID], http.StatusTemporaryRedirect)
+		http.Redirect(w, r, DB.URLMap[requestedID].URL, http.StatusTemporaryRedirect)
 	}
 	DB.RUnlock()
+}
+
+// MyHandlerListUrls is for getting all URLS for specified user
+func MyHandlerListUrls(w http.ResponseWriter, r *http.Request) {
+	var result []OutputAllURLs
+	DB.RLock()
+	// Iterating over all URLs
+	for k, v := range DB.URLMap {
+		// Appending to result if it matches our username
+		result = append(result, OutputAllURLs{ShortURL: getShortenedURL(k), OriginalURL: v.URL})
+	}
+	DB.RUnlock()
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	err := json.NewEncoder(w).Encode(result)
+	if err != nil {
+		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
+		return
+	}
 }
 
 // MyHandlerPost is for shortening full URL and saving info to DB
