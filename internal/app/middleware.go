@@ -2,6 +2,7 @@ package app
 
 import (
 	"compress/gzip"
+	"context"
 	"github.com/google/uuid"
 	"io"
 	"net/http"
@@ -63,25 +64,34 @@ func GZipReadHandler(next http.Handler) http.Handler {
 }
 
 // CheckSessionCookies checks if user is authorized and assigns id if not
+// Also we add userid value to context for handlers to operate
 func CheckSessionCookies(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userid, err1 := r.Cookie("userid")
-		sha, err2 := r.Cookie("userid-sha")
+		// Reading cookies
+		useridCookie, err1 := r.Cookie("userid")
+		shaCookie, err2 := r.Cookie("userid-sha")
+		var userid string
 		// If we don't have cookie, or we have wrong cookie we have to set it
-		if err1 != nil || err2 != nil || !checkValidAuth(userid.Value, sha.Value) {
-			id, _ := uuid.NewRandom()
+		if err1 != nil || err2 != nil || !checkValidAuth(useridCookie.Value, shaCookie.Value) {
+			useruuid, _ := uuid.NewRandom()
+			userid = useruuid.String()
 			cookie1 := &http.Cookie{
 				Name:  "userid",
-				Value: id.String(),
+				Value: userid,
 			}
 
 			cookie2 := &http.Cookie{
 				Name:  "userid-sha",
-				Value: generateSha(id.String()),
+				Value: generateSha(userid),
 			}
 			http.SetCookie(w, cookie1)
 			http.SetCookie(w, cookie2)
+		} else {
+			// If we already have correct cookie we leave userid as received from client
+			userid = useridCookie.Value
 		}
+		ctx := context.WithValue(r.Context(), "userid", userid)
+		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
 }
