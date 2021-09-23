@@ -63,7 +63,7 @@ func MyHandlerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	_, err = w.Write([]byte(shortenURL(string(b), r.Context().Value("userid").(string)).Result))
+	_, err = w.Write([]byte(shortenURL(string(b), r.Context().Value(contextKeyUserID).(string)).Result))
 	if err != nil {
 		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
 		return
@@ -86,7 +86,7 @@ func MyHandlerShorten(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	err = json.NewEncoder(w).Encode(shortenURL(input.URL, r.Context().Value("userid").(string)))
+	err = json.NewEncoder(w).Encode(shortenURL(input.URL, r.Context().Value(contextKeyUserID).(string)))
 	if err != nil {
 		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
 		return

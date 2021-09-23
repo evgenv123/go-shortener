@@ -99,6 +99,7 @@ func TestMyHandlers(t *testing.T) {
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
 			r := chi.NewRouter()
+			r.Use(CheckSessionCookies, GZipReadHandler, GZipWriteHandler)
 			// маршрутизация запросов обработчику
 			r.Get("/{id}", MyHandlerGetID)
 			r.Post("/api/shorten", MyHandlerShorten)
@@ -133,6 +134,7 @@ func TestHappyPath(t *testing.T) {
 	}), "Error initializing environment")
 
 	r := chi.NewRouter()
+	r.Use(CheckSessionCookies, GZipReadHandler, GZipWriteHandler)
 	// маршрутизация запросов обработчику
 	r.Get("/{id}", MyHandlerGetID)
 	r.Post("/api/shorten", MyHandlerShorten)

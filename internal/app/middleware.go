@@ -90,7 +90,7 @@ func CheckSessionCookies(next http.Handler) http.Handler {
 			// If we already have correct cookie we leave userid as received from client
 			userid = useridCookie.Value
 		}
-		ctx := context.WithValue(r.Context(), "userid", userid)
+		ctx := context.WithValue(r.Context(), contextKeyUserID, userid)
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})

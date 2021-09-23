@@ -38,3 +38,7 @@ type gzipWriter struct {
 }
 
 type Middleware func(http.Handler) http.Handler
+
+type contextKey int
+
+const contextKeyUserID contextKey = iota
