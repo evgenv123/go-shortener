@@ -24,13 +24,22 @@ func MyHandlerGetID(w http.ResponseWriter, r *http.Request) {
 // MyHandlerListUrls is for getting all URLS for specified user
 func MyHandlerListUrls(w http.ResponseWriter, r *http.Request) {
 	var result []OutputAllURLs
+	// no error checking on cookie because we have middleware to check cookies
+	userid, _ := r.Cookie("userid")
 	DB.RLock()
 	// Iterating over all URLs
 	for k, v := range DB.URLMap {
 		// Appending to result if it matches our username
-		result = append(result, OutputAllURLs{ShortURL: getShortenedURL(k), OriginalURL: v.URL})
+		if v.UserID == userid.Value {
+			result = append(result, OutputAllURLs{ShortURL: getShortenedURL(k), OriginalURL: v.URL})
+		}
 	}
 	DB.RUnlock()
+
+	if len(result) == 0 {
+		http.Error(w, "No links for user!", http.StatusNoContent)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -56,7 +65,9 @@ func MyHandlerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	_, err = w.Write([]byte(shortenURL(string(b)).Result))
+	// no error checking on cookie because we have middleware to check cookies
+	userid, _ := r.Cookie("userid")
+	_, err = w.Write([]byte(shortenURL(string(b), userid.Value).Result))
 	if err != nil {
 		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
 		return
@@ -79,7 +90,9 @@ func MyHandlerShorten(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	err = json.NewEncoder(w).Encode(shortenURL(input.URL))
+	// no error checking on cookie because we have middleware to check cookies
+	userid, _ := r.Cookie("userid")
+	err = json.NewEncoder(w).Encode(shortenURL(input.URL, userid.Value))
 	if err != nil {
 		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
 		return

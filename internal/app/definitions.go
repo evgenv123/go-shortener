@@ -10,9 +10,11 @@ import (
 var appConf config.Config
 var DB = ShortenedURLs{URLMap: make(map[int]MappedURL)}
 
+var myDirtyLittleSecret = []byte{18, 232, 139, 12, 216, 189, 22, 128, 122, 49, 246, 137, 191, 24, 38, 210}
+
 type MappedURL struct {
 	URL    string
-	UserID int
+	UserID string
 }
 
 type ShortenedURLs struct {
@@ -33,11 +35,6 @@ type OutputAllURLs struct {
 type gzipWriter struct {
 	http.ResponseWriter
 	Writer io.Writer
-}
-
-type gzipReader struct {
-	http.Request
-	Reader io.Reader
 }
 
 type Middleware func(http.Handler) http.Handler

@@ -62,20 +62,25 @@ func GZipReadHandler(next http.Handler) http.Handler {
 	})
 }
 
-func ParseCookies(next http.Handler) http.Handler {
+// CheckSessionCookies checks if user is authorized and assigns id if not
+func CheckSessionCookies(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := r.Cookie("userid")
-		if err != nil && err != http.ErrNoCookie {
-			http.Error(w, http.StatusText(400), http.StatusBadRequest)
-			return
-		}
-		if err == http.ErrNoCookie {
+		userid, err1 := r.Cookie("userid")
+		sha, err2 := r.Cookie("userid-sha")
+		// If we don't have cookie, or we have wrong cookie we have to set it
+		if err1 != nil || err2 != nil || !checkValidAuth(userid.Value, sha.Value) {
 			id, _ := uuid.NewRandom()
-			cookie := &http.Cookie{
+			cookie1 := &http.Cookie{
 				Name:  "userid",
 				Value: id.String(),
 			}
-			http.SetCookie(w, cookie)
+
+			cookie2 := &http.Cookie{
+				Name:  "userid-sha",
+				Value: generateSha(id.String()),
+			}
+			http.SetCookie(w, cookie1)
+			http.SetCookie(w, cookie2)
 		}
 		next.ServeHTTP(w, r)
 	})

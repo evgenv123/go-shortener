@@ -38,7 +38,7 @@ func main() {
 	r.Post("/", app.MyHandlerPost)
 	srv := &http.Server{
 		Addr:    conf.ServerAddr,
-		Handler: app.Conveyor(r, app.ParseCookies, app.GZipReadHandler, app.GZipWriteHandler),
+		Handler: app.Conveyor(r, app.CheckSessionCookies, app.GZipReadHandler, app.GZipWriteHandler),
 	}
 	// Creating interrupt channel
 	done := make(chan os.Signal, 1)
