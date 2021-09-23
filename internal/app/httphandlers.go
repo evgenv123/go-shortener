@@ -28,7 +28,7 @@ func MyHandlerListUrls(w http.ResponseWriter, r *http.Request) {
 	// Iterating over all URLs
 	for k, v := range DB.URLMap {
 		// Appending to result if it matches our username
-		if v.UserID == r.Context().Value("userid").(string) {
+		if v.UserID == r.Context().Value(contextKeyUserID).(string) {
 			result = append(result, OutputAllURLs{ShortURL: getShortenedURL(k), OriginalURL: v.URL})
 		}
 	}
