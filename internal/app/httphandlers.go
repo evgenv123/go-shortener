@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"github.com/evgenv123/go-shortener/internal/dbcore"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
@@ -90,5 +91,15 @@ func MyHandlerShorten(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
 		return
+	}
+}
+
+// MyHandlerPing is a handler for /ping endpoint
+func MyHandlerPing(w http.ResponseWriter, r *http.Request) {
+	if !dbcore.CheckConn() {
+		http.Error(w, "Cannot ping database!", http.StatusInternalServerError)
+		return
+	} else {
+		w.WriteHeader(http.StatusOK)
 	}
 }

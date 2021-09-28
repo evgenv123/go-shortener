@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/evgenv123/go-shortener/internal/app"
 	"github.com/evgenv123/go-shortener/internal/config"
+	"github.com/evgenv123/go-shortener/internal/dbcore"
 	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
@@ -29,11 +30,17 @@ func main() {
 	if err := app.Init(conf); err != nil {
 		log.Fatal(err)
 	}
+	if err := dbcore.Init(conf.DBSource); err != nil {
+		log.Println(err)
+	} else {
+		defer dbcore.Close()
+	}
 
 	r := chi.NewRouter()
 	// маршрутизация запросов обработчику
 	r.Get("/{id}", app.MyHandlerGetID)
 	r.Get("/user/urls", app.MyHandlerListUrls)
+	r.Get("/ping", app.MyHandlerPing)
 	r.Post("/api/shorten", app.MyHandlerShorten)
 	r.Post("/", app.MyHandlerPost)
 	srv := &http.Server{
