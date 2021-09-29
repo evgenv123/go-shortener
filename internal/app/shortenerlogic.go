@@ -44,7 +44,7 @@ func shortenURL(url string, userid string) OutputShortURL {
 	DB.Unlock()
 
 	if err := dbcore.InsertURL(url, idForLink, userid); err != nil {
-		log.Println("Error inserting short URL to DB")
+		log.Println("Error inserting short URL to DB: ", err)
 	}
 
 	return OutputShortURL{Result: getShortenedURL(idForLink)}

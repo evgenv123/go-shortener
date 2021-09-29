@@ -3,14 +3,17 @@ package dbcore
 import (
 	"context"
 	"database/sql"
+	"errors"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"time"
 )
 
 var db *sql.DB
+var dbOnline = false
 
 func Init(dsn string) error {
 	var err error
+	dbOnline = false
 	db, err = sql.Open("pgx", dsn)
 	if err != nil {
 		return err
@@ -23,6 +26,7 @@ func Init(dsn string) error {
 	if err != nil {
 		return err
 	}
+	dbOnline = true
 	return nil
 }
 
@@ -41,10 +45,13 @@ func CheckConn() bool {
 	return true
 }
 
-func InsertURL(fullUrl string, shortURLID int, userid string) error {
+func InsertURL(fullURL string, shortURLID int, userid string) error {
+	if !dbOnline {
+		return errors.New("database offline")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	_, err := db.ExecContext(ctx, "INSERT INTO "+TableName+" VALUES (?, ?, ?)", shortURLID, fullUrl, userid)
+	_, err := db.ExecContext(ctx, "INSERT INTO "+TableName+" VALUES (?, ?, ?)", shortURLID, fullURL, userid)
 	if err != nil {
 		return err
 	}
@@ -52,6 +59,10 @@ func InsertURL(fullUrl string, shortURLID int, userid string) error {
 }
 
 func UnshortURL(shortID int) (string, error) {
+	if !dbOnline {
+		return "", errors.New("database offline")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
