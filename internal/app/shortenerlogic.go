@@ -4,6 +4,8 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"github.com/evgenv123/go-shortener/internal/dbcore"
+	"log"
 	"math/rand"
 	"strconv"
 )
@@ -40,6 +42,10 @@ func shortenURL(url string, userid string) OutputShortURL {
 	}
 	DB.URLMap[idForLink] = MappedURL{url, userid}
 	DB.Unlock()
+
+	if err := dbcore.InsertURL(url, idForLink, userid); err != nil {
+		log.Println("Error inserting short URL to DB")
+	}
 
 	return OutputShortURL{Result: getShortenedURL(idForLink)}
 }
