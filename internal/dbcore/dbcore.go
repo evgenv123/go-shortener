@@ -14,6 +14,7 @@ var dbOnline = false
 func Init(dsn string) error {
 	var err error
 	dbOnline = false
+
 	db, err = sql.Open("pgx", dsn)
 	if err != nil {
 		return err

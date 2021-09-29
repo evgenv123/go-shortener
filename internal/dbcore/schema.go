@@ -4,7 +4,7 @@ const TableName = "shortURLs"
 
 const initTableCommand = `
 -- Short URLs table
-create table ` + TableName + `
+create table if not exists ` + TableName + `
 (
 	short_url_id	int,
     full_url		varchar(255) not null,
