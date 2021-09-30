@@ -12,7 +12,7 @@ type Config struct {
 	ServerAddr  string `arg:"-a,--,env:SERVER_ADDRESS" help:"Server address" default:"localhost:8080"`
 	BaseURL     string `arg:"-b,--,env:BASE_URL" help:"Base URL" default:"http://localhost:8080"`
 	FileStorage string `arg:"-f,--,env:FILE_STORAGE_PATH" help:"Storage filename" default:"urlStorage.gob"`
-	DBSource    string `arg:"-d,--,env:DATABASE_DSN" help:"Data Source Name" default:""`
+	DBSource    string `arg:"-d,--,env:DATABASE_DSN" help:"Data Source Name" default:"postgres://postgres:tttest@localhost:5432/postgres"`
 }
 
 func (c Config) Validate() error {

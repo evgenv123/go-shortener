@@ -14,7 +14,7 @@ var dbOnline = false
 func Init(dsn string) error {
 	var err error
 	dbOnline = false
-
+	// dsnExample := "postgres://postgres:tttest@localhost:5432/postgres"
 	db, err = sql.Open("pgx", dsn)
 	if err != nil {
 		return err
