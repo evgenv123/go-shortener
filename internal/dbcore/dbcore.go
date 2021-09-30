@@ -52,7 +52,7 @@ func InsertURL(fullURL string, shortURLID int, userid string) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	_, err := db.ExecContext(ctx, "INSERT INTO "+TableName+" VALUES (?, ?, ?)", shortURLID, fullURL, userid)
+	_, err := db.ExecContext(ctx, "INSERT INTO "+TableName+" VALUES ($1, $2, $3)", shortURLID, fullURL, userid)
 	if err != nil {
 		return err
 	}
