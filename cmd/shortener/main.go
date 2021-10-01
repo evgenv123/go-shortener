@@ -41,6 +41,7 @@ func main() {
 	r.Get("/{id}", app.MyHandlerGetID)
 	r.Get("/user/urls", app.MyHandlerListUrls)
 	r.Get("/ping", app.MyHandlerPing)
+	r.Post("/api/shorten/batch", app.MyHandlerShortenBatch)
 	r.Post("/api/shorten", app.MyHandlerShorten)
 	r.Post("/", app.MyHandlerPost)
 	srv := &http.Server{

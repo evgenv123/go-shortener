@@ -12,6 +12,7 @@ import (
 
 // MyHandlerGetId is for getting full URL from shortened
 func MyHandlerGetID(w http.ResponseWriter, r *http.Request) {
+	// TODO: Read from SQL if online
 	requestedID, err := strconv.Atoi(chi.URLParam(r, "id"))
 	DB.RLock()
 	if err != nil || DB.URLMap[requestedID].URL == "" {
@@ -24,6 +25,7 @@ func MyHandlerGetID(w http.ResponseWriter, r *http.Request) {
 
 // MyHandlerListUrls is for getting all URLS for specified user
 func MyHandlerListUrls(w http.ResponseWriter, r *http.Request) {
+	// TODO: Read from SQL if online
 	var result []OutputAllURLs
 	DB.RLock()
 	// Iterating over all URLs
@@ -88,6 +90,37 @@ func MyHandlerShorten(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	err = json.NewEncoder(w).Encode(shortenURL(input.URL, r.Context().Value(contextKeyUserID).(string)))
+	if err != nil {
+		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
+		return
+	}
+}
+
+// MyHandlerShortenBatch is a handler for /api/shorten/batch endpoint
+func MyHandlerShortenBatch(w http.ResponseWriter, r *http.Request) {
+	// reading original link body
+	var input []InputBatch
+	var output []OutputBatch
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Cannot decode request body!", http.StatusInternalServerError)
+		return
+	}
+	for i := 0; i < len(input); i++ {
+		// Checking for valid URL
+		_, err := url.ParseRequestURI(input[i].OrigURL)
+		if err != nil {
+			http.Error(w, "Wrong URL format!", http.StatusBadRequest)
+			return
+		}
+		output = append(output, OutputBatch{
+			CorrID:   input[i].CorrID,
+			ShortURL: shortenURL(input[i].OrigURL, r.Context().Value(contextKeyUserID).(string)).Result,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	err := json.NewEncoder(w).Encode(output)
 	if err != nil {
 		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
 		return

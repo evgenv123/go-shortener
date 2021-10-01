@@ -32,6 +32,16 @@ type OutputAllURLs struct {
 	OriginalURL string `json:"original_url"`
 }
 
+// Types for /api/shorten/batch endpoint
+type InputBatch struct {
+	CorrID  string `json:"correlation_id"`
+	OrigURL string `json:"original_url"`
+}
+type OutputBatch struct {
+	CorrID   string `json:"correlation_id"`
+	ShortURL string `json:"short_url"`
+}
+
 type gzipWriter struct {
 	http.ResponseWriter
 	Writer io.Writer
