@@ -62,24 +62,6 @@ func InsertURL(fullURL string, shortURLID int, userid string) error {
 	return nil
 }
 
-func UnshortenURL(shortID int) (string, error) {
-	if !dbOnline {
-		return "", errors.New("database offline")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-
-	var fullURL string
-	query := "SELECT full_url FROM " + TableName + " WHERE short_url_id=?"
-	err := db.QueryRowContext(ctx, query, shortID).Scan(&fullURL)
-
-	if err != nil {
-		return "", err
-	}
-	return fullURL, nil
-}
-
 // GetShortFromFull returns short URL ID from DB if it was shortened before
 func GetShortFromFull(fullURL string) (int, error) {
 	if !dbOnline {
