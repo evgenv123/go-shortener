@@ -4,7 +4,11 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
+	"fmt"
 	"github.com/evgenv123/go-shortener/internal/dbcore"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"log"
 	"math/rand"
 	"strconv"
@@ -22,15 +26,15 @@ func checkValidAuth(userid string, sha string) bool {
 	return generateSha(userid) == sha
 }
 
-// getShortenedURL returns full short URL including server address (using short url id as input)
-func getShortenedURL(shortID int) string {
+// GetShortenedURL returns full short URL including server address (using short url id as input)
+func GetShortenedURL(shortID int) string {
 	return appConf.BaseURL + "/" + strconv.Itoa(shortID)
 }
 
-func shortenURL(url string, userid string) OutputShortURL {
+func shortenURL(url string, userid string) (string, error) {
 	// Generating ID for link (b)
 	var idForLink int
-	DB.Lock()
+	DB.RLock()
 	// Check on duplicate IDs
 	for {
 		idForLink = rand.Intn(999999)
@@ -40,12 +44,30 @@ func shortenURL(url string, userid string) OutputShortURL {
 			break
 		}
 	}
+	DB.RUnlock()
+
+	if err := dbcore.InsertURL(url, idForLink, userid); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			switch pgErr.Code {
+			case pgerrcode.UniqueViolation:
+				// Here we request existing short url for our full url
+				short, err2 := dbcore.GetShortFromFull(url)
+				err = NewFullURLDuplicateError(url, GetShortenedURL(short), err)
+				// If we could not retrieve short url id for full url we wrap this error too
+				if err2 != nil {
+					err = fmt.Errorf("%s %w", err2, err)
+				}
+			}
+		}
+		log.Println("Error inserting short URL to DB ", err)
+		return "", err
+	}
+
+	// Writing new link to file DB
+	DB.Lock()
 	DB.URLMap[idForLink] = MappedURL{url, userid}
 	DB.Unlock()
 
-	if err := dbcore.InsertURL(url, idForLink, userid); err != nil {
-		log.Println("Error inserting short URL to DB: ", err)
-	}
-
-	return OutputShortURL{Result: getShortenedURL(idForLink)}
+	return GetShortenedURL(idForLink), nil
 }
