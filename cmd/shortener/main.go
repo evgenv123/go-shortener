@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"github.com/evgenv123/go-shortener/internal/app"
 	"github.com/evgenv123/go-shortener/internal/config"
-	"github.com/evgenv123/go-shortener/internal/dbcore"
 	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
@@ -30,24 +29,25 @@ func main() {
 	if err := app.Init(conf); err != nil {
 		log.Fatal(err)
 	}
-	if err := dbcore.Init(conf.DBSource); err != nil {
-		log.Println(err)
-	} else {
-		defer dbcore.Close()
-	}
+	defer app.Close()
 
 	r := chi.NewRouter()
-	// маршрутизация запросов обработчику
+	r.Use(app.CheckSessionCookies)
+	r.Use(app.GZipReadHandler)
+	r.Use(app.GZipWriteHandler)
+	// r.Use(middleware.RequestLogHandler)
+	r.Post("/", app.MyHandlerPost)
 	r.Get("/{id}", app.MyHandlerGetID)
 	r.Get("/user/urls", app.MyHandlerListUrls)
 	r.Get("/ping", app.MyHandlerPing)
 	r.Post("/api/shorten/batch", app.MyHandlerShortenBatch)
 	r.Post("/api/shorten", app.MyHandlerShorten)
-	r.Post("/", app.MyHandlerPost)
+
 	srv := &http.Server{
 		Addr:    conf.ServerAddr,
-		Handler: app.Conveyor(r, app.CheckSessionCookies, app.GZipReadHandler, app.GZipWriteHandler),
+		Handler: r,
 	}
+
 	// Creating interrupt channel
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
@@ -64,9 +64,5 @@ func main() {
 		log.Fatalf("Shutdown error: %v\n", err)
 	} else {
 		log.Printf("Gracefully stopped\n")
-	}
-	// Writing DB to file on exit
-	if err = app.WriteDBToFile(); err != nil {
-		log.Println("Error writing DB to file: ", err)
 	}
 }

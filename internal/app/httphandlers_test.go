@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestMyHandlers(t *testing.T) {
@@ -80,7 +81,7 @@ func TestMyHandlers(t *testing.T) {
 			inp: input{
 				uri:    "/api/shorten",
 				method: http.MethodPost,
-				body:   "{\"url\": \"https://mail.ru\"}",
+				body:   "{\"url\": \"https://maill.ru\"}",
 			},
 			outp: output{
 				code: http.StatusCreated,
@@ -88,9 +89,11 @@ func TestMyHandlers(t *testing.T) {
 		},
 	}
 	assert.NoError(t, Init(config.Config{
-		BaseURL:     "http://localhost:8080",
-		FileStorage: "urlStorage_test.gob",
-		ServerAddr:  "localhost:8080",
+		BaseURL:       "http://localhost:8080",
+		FileStorage:   "urlStorage_test.gob",
+		ServerAddr:    "localhost:8080",
+		CtxTimeout:    5 * time.Second,
+		OperationMode: config.OPModeFile,
 	}), "Error initializing environment")
 
 	for _, tt := range tests {
@@ -128,9 +131,11 @@ func TestMyHandlers(t *testing.T) {
 // TODO: Include HappyPath to regular tests
 func TestHappyPath(t *testing.T) {
 	assert.NoError(t, Init(config.Config{
-		BaseURL:     "http://localhost:8080",
-		FileStorage: "urlStorage_test.gob",
-		ServerAddr:  "localhost:8080",
+		BaseURL:       "http://localhost:8080",
+		FileStorage:   "urlStorage_test.gob",
+		ServerAddr:    "localhost:8080",
+		CtxTimeout:    5 * time.Second,
+		OperationMode: config.OPModeFile,
 	}), "Error initializing environment")
 
 	r := chi.NewRouter()

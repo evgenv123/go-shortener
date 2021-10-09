@@ -1,51 +1,65 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"github.com/evgenv123/go-shortener/internal/dbcore"
+	"github.com/evgenv123/go-shortener/model"
+	"github.com/evgenv123/go-shortener/service"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 // MyHandlerGetID is for getting full URL from shortened
 func MyHandlerGetID(w http.ResponseWriter, r *http.Request) {
-	// TODO: Read from SQL if online
 	requestedID, err := strconv.Atoi(chi.URLParam(r, "id"))
-	DB.RLock()
-	if err != nil || DB.URLMap[requestedID].URL == "" {
+	if err != nil {
 		http.Error(w, "Wrong requested ID!", http.StatusBadRequest)
-	} else {
-		http.Redirect(w, r, DB.URLMap[requestedID].URL, http.StatusTemporaryRedirect)
+		return
 	}
-	DB.RUnlock()
+
+	ctx, cancel := context.WithTimeout(context.Background(), appConf.CtxTimeout*time.Second)
+	defer cancel()
+	obj, err2 := UrlSvc.GetObjFromShortID(ctx, model.ShortID(requestedID))
+	if err2 != nil {
+		http.Error(w, "Error finding object for short id!", http.StatusBadRequest)
+		return
+	}
+
+	http.Redirect(w, r, obj.LongURL, http.StatusTemporaryRedirect)
 }
 
 // MyHandlerListUrls is for getting all URLS for specified user
 func MyHandlerListUrls(w http.ResponseWriter, r *http.Request) {
-	// TODO: Read from SQL if online
-	var result []OutputAllURLs
-	DB.RLock()
-	// Iterating over all URLs
-	for k, v := range DB.URLMap {
-		// Appending to result if it matches our username
-		if v.UserID == r.Context().Value(contextKeyUserID).(string) {
-			result = append(result, OutputAllURLs{ShortURL: GetShortenedURL(k), OriginalURL: v.URL})
-		}
-	}
-	DB.RUnlock()
+	ctx, cancel := context.WithTimeout(context.Background(), appConf.CtxTimeout*time.Second)
+	defer cancel()
 
-	if len(result) == 0 {
+	urls, err := UrlSvc.GetUserURLs(ctx, r.Context().Value(ContextKeyUserID).(string))
+	if err != nil {
+		http.Error(w, "Error getting URLS for user!", http.StatusInternalServerError)
+		return
+	}
+	if len(urls) == 0 {
 		http.Error(w, "No links for user!", http.StatusNoContent)
 		return
 	}
 
+	var result []OutputAllURLs
+	// Appending urls to output array
+	for _, v := range urls {
+		result = append(result, OutputAllURLs{
+			ShortURL:    UrlSvc.GetFullLinkShortObj(ctx, &v),
+			OriginalURL: v.LongURL},
+		)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	err := json.NewEncoder(w).Encode(result)
+	err = json.NewEncoder(w).Encode(result)
 	if err != nil {
 		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
 		return
@@ -67,16 +81,18 @@ func MyHandlerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), appConf.CtxTimeout*time.Second)
+	defer cancel()
+
 	// Trying to shorten URL from request
-	shortened, err := shortenURL(string(b), r.Context().Value(contextKeyUserID).(string))
+	shortened, err := UrlSvc.ShortenURL(ctx, string(b), r.Context().Value(ContextKeyUserID).(string))
 
 	if err != nil {
 		// If we receive duplicate error from SQL
-		var myErr *FullURLDuplicateError
+		var myErr *service.DuplicateFullURLErr
 		if errors.As(err, &myErr) {
 			// Send StatusConflict and existing short url
 			w.WriteHeader(http.StatusConflict)
-			shortened = myErr.ShortURL
 		} else {
 			http.Error(w, "Cannot shorten URL!"+err.Error(), http.StatusInternalServerError)
 			return
@@ -85,7 +101,7 @@ func MyHandlerPost(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 	}
 	// Writing reply
-	_, err = w.Write([]byte(shortened))
+	_, err = w.Write([]byte(UrlSvc.GetFullLinkShortObj(ctx, shortened)))
 	if err != nil {
 		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
 		return
@@ -101,22 +117,21 @@ func MyHandlerShorten(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Cannot decode request body!", http.StatusInternalServerError)
 		return
 	}
-	// Checking for valid URL
-	_, err := url.ParseRequestURI(input.URL)
-	if err != nil {
-		http.Error(w, "Wrong URL format!", http.StatusBadRequest)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
+	ctx, cancel := context.WithTimeout(context.Background(), appConf.CtxTimeout*time.Second)
+	defer cancel()
 
-	shortened, err := shortenURL(input.URL, r.Context().Value(contextKeyUserID).(string))
+	// Trying to shorten URL from request
+	shortened, err := UrlSvc.ShortenURL(ctx, input.URL, r.Context().Value(ContextKeyUserID).(string))
+
 	if err != nil {
-		// If we receive duplicate error from SQL
-		var myErr *FullURLDuplicateError
+		var myErr *service.DuplicateFullURLErr
+		var myErr2 *service.InvalidURLError
 		if errors.As(err, &myErr) {
 			// Send StatusConflict and existing short url
 			w.WriteHeader(http.StatusConflict)
-			shortened = myErr.ShortURL
+		} else if errors.As(err, &myErr2) {
+			http.Error(w, "Wrong URL format!", http.StatusBadRequest)
+			return
 		} else {
 			http.Error(w, "Cannot shorten URL!"+err.Error(), http.StatusInternalServerError)
 			return
@@ -125,7 +140,11 @@ func MyHandlerShorten(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 	}
 
-	err = json.NewEncoder(w).Encode(OutputShortURL{Result: shortened})
+	w.Header().Set("Content-Type", "application/json")
+
+	err = json.NewEncoder(w).Encode(OutputShortURL{
+		Result: UrlSvc.GetFullLinkShortObj(ctx, shortened),
+	})
 	if err != nil {
 		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
 		return
@@ -134,24 +153,39 @@ func MyHandlerShorten(w http.ResponseWriter, r *http.Request) {
 
 // MyHandlerShortenBatch is a handler for /api/shorten/batch endpoint
 func MyHandlerShortenBatch(w http.ResponseWriter, r *http.Request) {
-	// reading original link body
 	var input []InputBatch
 	var output []OutputBatch
+	// reading request body
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Cannot decode request body!", http.StatusInternalServerError)
 		return
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), appConf.CtxTimeout*time.Second)
+	defer cancel()
+
 	for i := 0; i < len(input); i++ {
-		// Checking for valid URL
-		_, err := url.ParseRequestURI(input[i].OrigURL)
+		// Trying to shorten URL from request
+		shortened, err := UrlSvc.ShortenURL(ctx, input[i].OrigURL, r.Context().Value(ContextKeyUserID).(string))
+
 		if err != nil {
-			http.Error(w, "Wrong URL format!", http.StatusBadRequest)
-			return
+			// If we receive duplicate error from SQL
+			var myErr *service.DuplicateFullURLErr
+			var myErr2 *service.InvalidURLError
+			if errors.As(err, &myErr) {
+				http.Error(w, "Duplicate Full URL "+myErr.FullURL, http.StatusBadRequest)
+				return
+			} else if errors.As(err, &myErr2) {
+				http.Error(w, "Wrong URL format!", http.StatusBadRequest)
+				return
+			} else {
+				http.Error(w, "Cannot shorten URL!"+err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
-		shortened, _ := shortenURL(input[i].OrigURL, r.Context().Value(contextKeyUserID).(string))
 		output = append(output, OutputBatch{
 			CorrID:   input[i].CorrID,
-			ShortURL: shortened,
+			ShortURL: UrlSvc.GetFullLinkShortObj(ctx, shortened),
 		})
 	}
 
@@ -166,7 +200,9 @@ func MyHandlerShortenBatch(w http.ResponseWriter, r *http.Request) {
 
 // MyHandlerPing is a handler for /ping endpoint
 func MyHandlerPing(w http.ResponseWriter, r *http.Request) {
-	if !dbcore.CheckConn() {
+	ctx, cancel := context.WithTimeout(context.Background(), appConf.CtxTimeout*time.Second)
+	defer cancel()
+	if !UrlSvc.Ping(ctx) {
 		http.Error(w, "Cannot ping database!", http.StatusInternalServerError)
 		return
 	} else {
