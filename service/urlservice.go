@@ -22,11 +22,11 @@ func New(c Config, st StorageExpected) (*Processor, error) {
 	if st == nil {
 		return nil, errors.New("storage cannot be nil")
 	}
-	proc := &Processor{config: c, urlStorage: st}
+	proc := Processor{config: c, urlStorage: st}
 	if c.HexSecret == "" {
 		proc.config.HexSecret = hex.EncodeToString(defaultSecret)
 	}
-	return &Processor{config: c, urlStorage: st}, nil
+	return &proc, nil
 }
 
 func (svc *Processor) Close() error {

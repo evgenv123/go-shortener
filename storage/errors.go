@@ -18,9 +18,9 @@ func (myErr *FullURLNotFoundErr) Unwrap() error {
 	return myErr.Err
 }
 
-func NewFullURLNotFoundErr(shortUrl model.ShortID, err error) error {
+func NewFullURLNotFoundErr(shortURL model.ShortID, err error) error {
 	return &FullURLNotFoundErr{
-		ShortURL: shortUrl,
+		ShortURL: shortURL,
 		Err:      err,
 	}
 }

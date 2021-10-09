@@ -73,9 +73,9 @@ func CheckSessionCookies(next http.Handler) http.Handler {
 		shaCookie, err2 := r.Cookie("userid-sha")
 		var userid string
 		// If we don't have cookie, or we have wrong cookie we have to set it
-		if err1 != nil || err2 != nil || !UrlSvc.CheckValidAuth(useridCookie.Value, shaCookie.Value) {
+		if err1 != nil || err2 != nil || !URLSvc.CheckValidAuth(useridCookie.Value, shaCookie.Value) {
 			var err error
-			userid, err = UrlSvc.GenerateUserID()
+			userid, err = URLSvc.GenerateUserID()
 			if err != nil {
 				http.Error(w, "error generating user id: "+err.Error(), http.StatusInternalServerError)
 				return
@@ -87,7 +87,7 @@ func CheckSessionCookies(next http.Handler) http.Handler {
 
 			cookie2 := &http.Cookie{
 				Name:  "userid-sha",
-				Value: UrlSvc.GenerateSha(userid),
+				Value: URLSvc.GenerateSha(userid),
 			}
 			http.SetCookie(w, cookie1)
 			http.SetCookie(w, cookie2)

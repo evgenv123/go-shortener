@@ -8,12 +8,12 @@ import (
 )
 
 func (st *Storage) AddNewURL(ctx context.Context, url model.ShortenedURL) (model.ShortenedURL, error) {
-	longUrl := LongURL{
+	longURL := LongURL{
 		UserID: url.UserID,
 		URL:    url.LongURL,
 	}
 	st.Lock()
-	st.db.URL[url.ShortURL] = longUrl
+	st.db.URL[url.ShortURL] = longURL
 	st.Unlock()
 
 	return url, nil

@@ -24,7 +24,7 @@ func MyHandlerGetID(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), appConf.CtxTimeout*time.Second)
 	defer cancel()
-	obj, err2 := UrlSvc.GetObjFromShortID(ctx, model.ShortID(requestedID))
+	obj, err2 := URLSvc.GetObjFromShortID(ctx, model.ShortID(requestedID))
 	if err2 != nil {
 		http.Error(w, "Error finding object for short id!", http.StatusBadRequest)
 		return
@@ -38,7 +38,7 @@ func MyHandlerListUrls(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), appConf.CtxTimeout*time.Second)
 	defer cancel()
 
-	urls, err := UrlSvc.GetUserURLs(ctx, r.Context().Value(ContextKeyUserID).(string))
+	urls, err := URLSvc.GetUserURLs(ctx, r.Context().Value(ContextKeyUserID).(string))
 	if err != nil {
 		http.Error(w, "Error getting URLS for user!", http.StatusInternalServerError)
 		return
@@ -52,7 +52,7 @@ func MyHandlerListUrls(w http.ResponseWriter, r *http.Request) {
 	// Appending urls to output array
 	for _, v := range urls {
 		result = append(result, OutputAllURLs{
-			ShortURL:    UrlSvc.GetFullLinkShortObj(ctx, &v),
+			ShortURL:    URLSvc.GetFullLinkShortObj(ctx, &v),
 			OriginalURL: v.LongURL},
 		)
 	}
@@ -85,7 +85,7 @@ func MyHandlerPost(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	// Trying to shorten URL from request
-	shortened, err := UrlSvc.ShortenURL(ctx, string(b), r.Context().Value(ContextKeyUserID).(string))
+	shortened, err := URLSvc.ShortenURL(ctx, string(b), r.Context().Value(ContextKeyUserID).(string))
 
 	if err != nil {
 		// If we receive duplicate error from SQL
@@ -101,7 +101,7 @@ func MyHandlerPost(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 	}
 	// Writing reply
-	_, err = w.Write([]byte(UrlSvc.GetFullLinkShortObj(ctx, shortened)))
+	_, err = w.Write([]byte(URLSvc.GetFullLinkShortObj(ctx, shortened)))
 	if err != nil {
 		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
 		return
@@ -120,8 +120,10 @@ func MyHandlerShorten(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), appConf.CtxTimeout*time.Second)
 	defer cancel()
 
+	w.Header().Set("Content-Type", "application/json")
+
 	// Trying to shorten URL from request
-	shortened, err := UrlSvc.ShortenURL(ctx, input.URL, r.Context().Value(ContextKeyUserID).(string))
+	shortened, err := URLSvc.ShortenURL(ctx, input.URL, r.Context().Value(ContextKeyUserID).(string))
 
 	if err != nil {
 		var myErr *service.DuplicateFullURLErr
@@ -140,10 +142,8 @@ func MyHandlerShorten(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-
 	err = json.NewEncoder(w).Encode(OutputShortURL{
-		Result: UrlSvc.GetFullLinkShortObj(ctx, shortened),
+		Result: URLSvc.GetFullLinkShortObj(ctx, shortened),
 	})
 	if err != nil {
 		http.Error(w, "Cannot write reply body!", http.StatusInternalServerError)
@@ -164,9 +164,11 @@ func MyHandlerShortenBatch(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), appConf.CtxTimeout*time.Second)
 	defer cancel()
 
+	w.Header().Set("Content-Type", "application/json")
+
 	for i := 0; i < len(input); i++ {
 		// Trying to shorten URL from request
-		shortened, err := UrlSvc.ShortenURL(ctx, input[i].OrigURL, r.Context().Value(ContextKeyUserID).(string))
+		shortened, err := URLSvc.ShortenURL(ctx, input[i].OrigURL, r.Context().Value(ContextKeyUserID).(string))
 
 		if err != nil {
 			// If we receive duplicate error from SQL
@@ -185,11 +187,10 @@ func MyHandlerShortenBatch(w http.ResponseWriter, r *http.Request) {
 		}
 		output = append(output, OutputBatch{
 			CorrID:   input[i].CorrID,
-			ShortURL: UrlSvc.GetFullLinkShortObj(ctx, shortened),
+			ShortURL: URLSvc.GetFullLinkShortObj(ctx, shortened),
 		})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	err := json.NewEncoder(w).Encode(output)
 	if err != nil {
@@ -202,7 +203,7 @@ func MyHandlerShortenBatch(w http.ResponseWriter, r *http.Request) {
 func MyHandlerPing(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), appConf.CtxTimeout*time.Second)
 	defer cancel()
-	if !UrlSvc.Ping(ctx) {
+	if !URLSvc.Ping(ctx) {
 		http.Error(w, "Cannot ping database!", http.StatusInternalServerError)
 		return
 	} else {

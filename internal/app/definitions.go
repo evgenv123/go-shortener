@@ -8,7 +8,7 @@ import (
 )
 
 var appConf config.Config
-var UrlSvc *service.Processor
+var URLSvc *service.Processor
 
 // InputURL defines json input format for /api/shorten endpoint
 type InputURL struct {

@@ -36,10 +36,10 @@ func (myErr *DuplicateFullURLErr) Unwrap() error {
 	return myErr.Err
 }
 
-func NewDuplicateFullURLErr(fullUrl string, shortUrl string, err error) error {
+func NewDuplicateFullURLErr(fullURL string, shortURL string, err error) error {
 	return &DuplicateFullURLErr{
-		FullURL:  fullUrl,
-		ShortURL: shortUrl,
+		FullURL:  fullURL,
+		ShortURL: shortURL,
 		Err:      err,
 	}
 }

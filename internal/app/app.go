@@ -7,10 +7,10 @@ import (
 func Init(c config.Config) error {
 	var err error
 	appConf = c
-	UrlSvc, err = c.BuildURLService()
+	URLSvc, err = c.BuildURLService()
 	return err
 }
 
 func Close() error {
-	return UrlSvc.Close()
+	return URLSvc.Close()
 }
