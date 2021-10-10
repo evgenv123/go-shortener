@@ -40,14 +40,14 @@ func MyHandlerListUrls(w http.ResponseWriter, r *http.Request) {
 
 	urls, err := URLSvc.GetUserURLs(ctx, r.Context().Value(ContextKeyUserID).(string))
 	if err != nil {
-		http.Error(w, "Error getting URLS for user!", http.StatusInternalServerError)
-		return
+		if errors.Is(err, service.NoURLsForUserErr) {
+			http.Error(w, "No links for user!", http.StatusNoContent)
+			return
+		} else {
+			http.Error(w, "Error getting URLS for user!", http.StatusInternalServerError)
+			return
+		}
 	}
-	if len(urls) == 0 {
-		http.Error(w, "No links for user!", http.StatusNoContent)
-		return
-	}
-
 	var result []OutputAllURLs
 	// Appending urls to output array
 	for _, v := range urls {

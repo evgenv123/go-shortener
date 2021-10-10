@@ -22,7 +22,12 @@ func (svc *Processor) CheckValidAuth(userid string, sha string) bool {
 }
 
 func (svc *Processor) GetUserURLs(ctx context.Context, userID string) ([]model.ShortenedURL, error) {
-	return svc.urlStorage.GetUserURLs(ctx, userID)
+	result, err := svc.urlStorage.GetUserURLs(ctx, userID)
+	// Switching error type from storage to service
+	if errors.Is(err, storage.NoURLsForUserErr) {
+		return result, NoURLsForUserErr
+	}
+	return result, err
 }
 
 func (svc *Processor) Ping(ctx context.Context) bool {

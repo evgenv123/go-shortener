@@ -72,7 +72,9 @@ func (st *Storage) GetUserURLs(ctx context.Context, userID string) ([]model.Shor
 			result = append(result, item)
 		}
 	}
-
+	if len(result) == 0 {
+		return result, storage.NoURLsForUserErr
+	}
 	return result, nil
 }
 

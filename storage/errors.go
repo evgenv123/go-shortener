@@ -1,8 +1,13 @@
 package storage
 
 import (
+	"errors"
 	"fmt"
 	"github.com/evgenv123/go-shortener/model"
+)
+
+var (
+	NoURLsForUserErr = errors.New("no URLs for user")
 )
 
 type FullURLNotFoundErr struct {

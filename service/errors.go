@@ -1,6 +1,14 @@
 package service
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/evgenv123/go-shortener/storage"
+)
+
+var (
+	// NoURLsForUser is redefined error from storage so app module can see it
+	NoURLsForUserErr = storage.NoURLsForUserErr
+)
 
 type InvalidURLError struct {
 	URL string

@@ -16,6 +16,7 @@ type URLReader interface {
 	// Returns error not found if nothing found
 	GetIDByFull(ctx context.Context, fullURL string) (*model.ShortenedURL, error)
 	// GetUserURLs finds all ShortenedURLs associated with userID
+	// If no URLs found returns storage.NoURLsForUserErr error
 	GetUserURLs(ctx context.Context, userID string) ([]model.ShortenedURL, error)
 	// Ping checks if the storage is online
 	Ping(ctx context.Context) bool
