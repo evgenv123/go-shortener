@@ -45,10 +45,10 @@ func (st Storage) GetIDByFull(ctx context.Context, fullURL string) (*model.Short
 // GetUserURLs implements storage.URLReader interface
 func (st Storage) GetUserURLs(ctx context.Context, userID string) ([]model.ShortenedURL, error) {
 	var res []ShortenedURL
-	err := st.db.SelectContext(ctx, &res, "SELECT * FROM "+TableName+" WHERE user_id = ?", userID)
+	err := st.db.SelectContext(ctx, &res, "SELECT * FROM "+TableName+" WHERE user_id = $1", userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, storage.NoURLsForUserErr
+			return nil, storage.ErrNoURLsForUser
 		}
 		return nil, err
 	}

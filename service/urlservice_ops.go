@@ -24,8 +24,8 @@ func (svc *Processor) CheckValidAuth(userid string, sha string) bool {
 func (svc *Processor) GetUserURLs(ctx context.Context, userID string) ([]model.ShortenedURL, error) {
 	result, err := svc.urlStorage.GetUserURLs(ctx, userID)
 	// Switching error type from storage to service
-	if errors.Is(err, storage.NoURLsForUserErr) {
-		return result, NoURLsForUserErr
+	if errors.Is(err, storage.ErrNoURLsForUser) {
+		return result, ErrNoURLsForUser
 	}
 	return result, err
 }

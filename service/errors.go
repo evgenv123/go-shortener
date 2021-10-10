@@ -7,7 +7,7 @@ import (
 
 var (
 	// NoURLsForUser is redefined error from storage so app module can see it
-	NoURLsForUserErr = storage.NoURLsForUserErr
+	ErrNoURLsForUser = storage.ErrNoURLsForUser
 )
 
 type InvalidURLError struct {

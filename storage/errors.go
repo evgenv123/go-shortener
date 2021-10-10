@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	NoURLsForUserErr = errors.New("no URLs for user")
+	ErrNoURLsForUser = errors.New("no URLs for user")
 )
 
 type FullURLNotFoundErr struct {
