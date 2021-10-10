@@ -47,10 +47,14 @@ func (st Storage) GetUserURLs(ctx context.Context, userID string) ([]model.Short
 	var res []ShortenedURL
 	err := st.db.SelectContext(ctx, &res, "SELECT * FROM "+TableName+" WHERE user_id = $1", userID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, storage.ErrNoURLsForUser
-		}
+		// Looks like sqlx.SelectContext does not return error if we have empty result??
+		//if errors.Is(err, sql.ErrNoRows) {
+		//	return nil, storage.ErrNoURLsForUser
+		//}
 		return nil, err
+	}
+	if len(res) == 0 {
+		return nil, storage.ErrNoURLsForUser
 	}
 	// Converting DB output to canonical model
 	var ret []model.ShortenedURL
