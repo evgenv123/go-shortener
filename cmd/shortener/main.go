@@ -15,7 +15,7 @@ import (
 )
 
 func startHTTP(srv *http.Server) {
-	// Error ErrServerClosed is thrown during graceful shutdown
+	// Error ErrServerClosed is thrown during graceful shutdown, so we consider it is not error
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Listen: %s\n", err)
 	}
@@ -29,16 +29,25 @@ func main() {
 	if err := app.Init(conf); err != nil {
 		log.Fatal(err)
 	}
+	defer app.Close()
 
 	r := chi.NewRouter()
-	// маршрутизация запросов обработчику
-	r.Get("/{id}", app.MyHandlerGetID)
-	r.Post("/api/shorten", app.MyHandlerShorten)
+	r.Use(app.CheckSessionCookies)
+	r.Use(app.GZipReadHandler)
+	r.Use(app.GZipWriteHandler)
+	// r.Use(middleware.RequestLogHandler)
 	r.Post("/", app.MyHandlerPost)
+	r.Get("/{id}", app.MyHandlerGetID)
+	r.Get("/user/urls", app.MyHandlerListUrls)
+	r.Get("/ping", app.MyHandlerPing)
+	r.Post("/api/shorten/batch", app.MyHandlerShortenBatch)
+	r.Post("/api/shorten", app.MyHandlerShorten)
+
 	srv := &http.Server{
 		Addr:    conf.ServerAddr,
 		Handler: r,
 	}
+
 	// Creating interrupt channel
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
@@ -55,9 +64,5 @@ func main() {
 		log.Fatalf("Shutdown error: %v\n", err)
 	} else {
 		log.Printf("Gracefully stopped\n")
-	}
-	// Writing DB to file on exit
-	if err = app.WriteDBToFile(); err != nil {
-		log.Println("Error writing DB to file: ", err)
 	}
 }

@@ -5,9 +5,12 @@ import (
 )
 
 func Init(c config.Config) error {
+	var err error
 	appConf = c
-	if err := readDBFromFile(); err != nil {
-		return err
-	}
-	return nil
+	URLSvc, err = c.BuildURLService()
+	return err
+}
+
+func Close() error {
+	return URLSvc.Close()
 }
