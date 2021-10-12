@@ -8,6 +8,10 @@ import (
 )
 
 func (st *Storage) AddNewURL(ctx context.Context, url model.ShortenedURL) (model.ShortenedURL, error) {
+	// Check if full URL already exists
+	if _, err := st.GetIDByFull(ctx, url.LongURL); err == nil {
+		return model.ShortenedURL{}, storage.ErrFullURLExists
+	}
 	longURL := LongURL{
 		UserID: url.UserID,
 		URL:    url.LongURL,

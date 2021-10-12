@@ -6,6 +6,8 @@ import (
 	"errors"
 	"github.com/evgenv123/go-shortener/model"
 	"github.com/evgenv123/go-shortener/storage"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 )
 
 // GetFullByID implements storage.URLReader interface
@@ -75,6 +77,13 @@ func (st Storage) AddNewURL(ctx context.Context, url model.ShortenedURL) (model.
 	err := st.db.QueryRowContext(ctx, query, int(url.ShortURL), url.LongURL, url.UserID).
 		Scan(&result.ShortURL, &result.LongURL, &result.UserID)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			switch pgErr.Code {
+			case pgerrcode.UniqueViolation:
+				return result, storage.ErrFullURLExists
+			}
+		}
 		return result, err
 	}
 

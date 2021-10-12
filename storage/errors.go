@@ -8,6 +8,7 @@ import (
 
 var (
 	ErrNoURLsForUser = errors.New("no URLs for user")
+	ErrFullURLExists = errors.New("full URL already exists")
 )
 
 type FullURLNotFoundErr struct {

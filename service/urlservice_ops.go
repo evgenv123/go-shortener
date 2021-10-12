@@ -91,14 +91,17 @@ func (svc *Processor) ShortenURL(ctx context.Context, fullURL string, userID str
 	if err != nil {
 		return nil, NewInvalidURLError(fullURL, err)
 	}
-	if obj, err := svc.GetObjFromFullURL(ctx, fullURL); err == nil {
-		return obj, NewDuplicateFullURLErr(fullURL, svc.GetFullLinkShortObj(ctx, obj), err)
-	}
 	idForLink, err := svc.generateNewID(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error generating short ID: %w", err)
 	}
+	// Trying to add URL
 	result, err := svc.urlStorage.AddNewURL(ctx, model.ShortenedURL{ShortURL: idForLink, LongURL: fullURL, UserID: userID})
+	// If we get item already exists error we send back error and existing item
+	if errors.Is(err, storage.ErrFullURLExists) {
+		obj, err := svc.GetObjFromFullURL(ctx, fullURL)
+		return obj, NewDuplicateFullURLErr(fullURL, svc.GetFullLinkShortObj(ctx, obj), err)
+	}
 
 	return &result, err
 }

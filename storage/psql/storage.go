@@ -16,13 +16,13 @@ type (
 	}
 )
 
-func New(c Config) (*Storage, error) {
+func New(c Config) (Storage, error) {
 	var err error
-	st := &Storage{config: c}
+	st := Storage{config: c}
 
 	st.db, err = sqlx.Open("pgx", st.config.DSN)
 	if err != nil {
-		return nil, err
+		return Storage{}, err
 	}
 
 	// Initializing DB table if it does not exist
@@ -31,7 +31,7 @@ func New(c Config) (*Storage, error) {
 	defer cancel()
 	_, err = st.db.ExecContext(ctx, initTableCommand)
 	if err != nil {
-		return nil, fmt.Errorf("error initializing table: %w", err)
+		return Storage{}, fmt.Errorf("error initializing table: %w", err)
 	}
 
 	return st, nil
