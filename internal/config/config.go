@@ -68,11 +68,11 @@ func (c Config) BuildGOBStorage() (*gob.Storage, error) {
 	return st, nil
 }
 
-func (c Config) BuildPSQLStorage() (*psql.Storage, error) {
+func (c Config) BuildPSQLStorage() (psql.Storage, error) {
 	psqlConf := psql.Config{DSN: c.DBSource}
 	st, err := psql.New(psqlConf)
 	if err != nil {
-		return nil, fmt.Errorf("error building PSQL storage: %w", err)
+		return st, fmt.Errorf("error building PSQL storage: %w", err)
 	}
 	return st, nil
 }

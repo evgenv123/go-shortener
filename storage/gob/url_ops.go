@@ -42,23 +42,16 @@ func (st *Storage) GetFullByID(ctx context.Context, shortURLID model.ShortID) (*
 		return nil, storage.NewFullURLNotFoundErr(shortURLID, nil)
 	}
 	// Converting to canonical model
-	result := model.ShortenedURL{
-		ShortURL: shortURLID,
-		LongURL:  val.URL,
-		UserID:   val.UserID,
-	}
-	return &result, nil
+	result, err := val.ToCanonical(shortURLID)
+
+	return &result, err
 }
 
 func (st *Storage) GetIDByFull(ctx context.Context, fullURL string) (*model.ShortenedURL, error) {
 	for key, val := range st.db.URL {
 		if val.URL == fullURL {
-			result := model.ShortenedURL{
-				ShortURL: key,
-				LongURL:  val.URL,
-				UserID:   val.UserID,
-			}
-			return &result, nil
+			result, err := val.ToCanonical(key)
+			return &result, err
 		}
 	}
 	return nil, errors.New("no item found for full url: " + fullURL)
@@ -68,17 +61,18 @@ func (st *Storage) GetUserURLs(ctx context.Context, userID string) ([]model.Shor
 	var result []model.ShortenedURL
 	for key, val := range st.db.URL {
 		if val.UserID == userID {
-			item := model.ShortenedURL{
-				ShortURL: key,
-				LongURL:  val.URL,
-				UserID:   val.UserID,
+			item, err := val.ToCanonical(key)
+			if err == nil {
+				result = append(result, item)
+			} else {
+				return nil, err
 			}
-			result = append(result, item)
 		}
 	}
 	if len(result) == 0 {
 		return result, storage.ErrNoURLsForUser
 	}
+
 	return result, nil
 }
 

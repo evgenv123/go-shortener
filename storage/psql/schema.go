@@ -1,5 +1,7 @@
 package psql
 
+import "github.com/evgenv123/go-shortener/model"
+
 const (
 	TableName        = "shortURLs"
 	initTableCommand = `
@@ -22,4 +24,30 @@ type (
 		LongURL  string `db:"full_url"`
 		UserID   string `db:"user_id"`
 	}
+
+	ShortenedURLs []ShortenedURL
 )
+
+// ToCanonical converts ShortenedURLs to canonical model []model.ShortenedURL
+func (u ShortenedURLs) ToCanonical() ([]model.ShortenedURL, error) {
+	var ret []model.ShortenedURL
+	for _, v := range u {
+		if newItem, err := v.ToCanonical(); err == nil {
+			ret = append(ret, newItem)
+		} else {
+			return nil, err
+		}
+	}
+	return ret, nil
+}
+
+// ToCanonical converts ShortenedURL to canonical model model.ShortenedURL
+func (u ShortenedURL) ToCanonical() (model.ShortenedURL, error) {
+	ret := model.ShortenedURL{
+		ShortURL: model.ShortID(u.ShortURL),
+		LongURL:  u.LongURL,
+		UserID:   u.UserID,
+	}
+
+	return ret, nil
+}

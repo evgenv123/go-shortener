@@ -12,10 +12,9 @@ import (
 
 // GetFullByID implements storage.URLReader interface
 func (st Storage) GetFullByID(ctx context.Context, shortURLID model.ShortID) (*model.ShortenedURL, error) {
-	var fullURL string
-	var userID string
+	res := ShortenedURL{ShortURL: int(shortURLID)}
 	query := "SELECT full_url,user_id FROM " + TableName + " WHERE short_url_id=$1"
-	err := st.db.QueryRowContext(ctx, query, int(shortURLID)).Scan(&fullURL, &userID)
+	err := st.db.QueryRowContext(ctx, query, res.ShortURL).Scan(&res.LongURL, &res.UserID)
 	if err != nil {
 		// If FULL URL not found return custom error
 		if errors.Is(err, sql.ErrNoRows) {
@@ -23,30 +22,28 @@ func (st Storage) GetFullByID(ctx context.Context, shortURLID model.ShortID) (*m
 		}
 		return nil, err
 	}
-	result := model.ShortenedURL{LongURL: fullURL, ShortURL: shortURLID, UserID: userID}
+	result, err := res.ToCanonical()
 
-	return &result, nil
+	return &result, err
 }
 
 // GetIDByFull implements storage.URLReader interface
 // Returns sql.ErrNoRows if not found
 func (st Storage) GetIDByFull(ctx context.Context, fullURL string) (*model.ShortenedURL, error) {
-	var shortID int
-	var userID string
+	res := ShortenedURL{LongURL: fullURL}
 	query := "SELECT short_url_id,user_id FROM " + TableName + " WHERE full_url=$1"
-	err := st.db.QueryRowContext(ctx, query, fullURL).Scan(&shortID, &userID)
-
+	err := st.db.QueryRowContext(ctx, query, res.LongURL).Scan(&res.ShortURL, &res.UserID)
 	if err != nil {
 		return nil, err
 	}
-	result := model.ShortenedURL{LongURL: fullURL, ShortURL: model.ShortID(shortID), UserID: userID}
+	result, err := res.ToCanonical()
 
-	return &result, nil
+	return &result, err
 }
 
 // GetUserURLs implements storage.URLReader interface
 func (st Storage) GetUserURLs(ctx context.Context, userID string) ([]model.ShortenedURL, error) {
-	var res []ShortenedURL
+	var res ShortenedURLs
 	err := st.db.SelectContext(ctx, &res, "SELECT * FROM "+TableName+" WHERE user_id = $1", userID)
 	if err != nil {
 		// Looks like sqlx.SelectContext does not return error if we have empty result??
@@ -59,15 +56,9 @@ func (st Storage) GetUserURLs(ctx context.Context, userID string) ([]model.Short
 		return nil, storage.ErrNoURLsForUser
 	}
 	// Converting DB output to canonical model
-	var ret []model.ShortenedURL
-	for _, v := range res {
-		ret = append(ret, model.ShortenedURL{
-			ShortURL: model.ShortID(v.ShortURL),
-			LongURL:  v.LongURL,
-			UserID:   v.UserID,
-		})
-	}
-	return ret, nil
+	ret, err := res.ToCanonical()
+
+	return ret, err
 }
 
 // AddNewURL implements storage.URLWriter interface
