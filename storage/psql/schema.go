@@ -1,8 +1,8 @@
 package psql
 
 import (
+	"database/sql"
 	"github.com/evgenv123/go-shortener/model"
-	"time"
 )
 
 const (
@@ -24,10 +24,10 @@ create table if not exists ` + TableName + `
 type (
 	// ShortenedURL represents model.ShortenedURL canonical model for PSQL storage
 	ShortenedURL struct {
-		ShortURL  int       `db:"short_url_id"`
-		LongURL   string    `db:"full_url"`
-		UserID    string    `db:"user_id"`
-		DeletedAt time.Time `db:"deleted_at"`
+		ShortURL  int          `db:"short_url_id"`
+		LongURL   string       `db:"full_url"`
+		UserID    string       `db:"user_id"`
+		DeletedAt sql.NullTime `db:"deleted_at"`
 	}
 
 	ShortenedURLs []ShortenedURL
@@ -52,7 +52,7 @@ func (u ShortenedURL) ToCanonical() (model.ShortenedURL, error) {
 		ShortURL:  model.ShortID(u.ShortURL),
 		LongURL:   u.LongURL,
 		UserID:    u.UserID,
-		DeletedAt: u.DeletedAt,
+		DeletedAt: u.DeletedAt.Time,
 	}
 
 	return ret, nil

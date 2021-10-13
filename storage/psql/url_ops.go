@@ -64,22 +64,21 @@ func (st Storage) GetUserURLs(ctx context.Context, userID string) ([]model.Short
 
 // AddNewURL implements storage.URLWriter interface
 func (st Storage) AddNewURL(ctx context.Context, url model.ShortenedURL) (model.ShortenedURL, error) {
-	var result model.ShortenedURL
+	var qResult ShortenedURL
 	query := "INSERT INTO " + TableName + " VALUES ($1, $2, $3) RETURNING *"
-	err := st.db.QueryRowContext(ctx, query, int(url.ShortURL), url.LongURL, url.UserID).
-		Scan(&result.ShortURL, &result.LongURL, &result.UserID, &result.DeletedAt)
+	err := st.db.GetContext(ctx, &qResult, query, int(url.ShortURL), url.LongURL, url.UserID)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			switch pgErr.Code {
 			case pgerrcode.UniqueViolation:
-				return result, storage.ErrFullURLExists
+				return model.ShortenedURL{}, storage.ErrFullURLExists
 			}
 		}
-		return result, err
+		return model.ShortenedURL{}, err
 	}
-
-	return result, nil
+	canonical, err := qResult.ToCanonical()
+	return canonical, err
 }
 
 // AddBatchURL implements storage.URLWriter interface
