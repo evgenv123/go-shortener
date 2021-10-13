@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/evgenv123/go-shortener/internal/config"
+	"github.com/evgenv123/go-shortener/model"
 	"github.com/evgenv123/go-shortener/service"
 	"io"
 	"net/http"
@@ -34,6 +35,11 @@ type InputBatch struct {
 type OutputBatch struct {
 	CorrID   string `json:"correlation_id"`
 	ShortURL string `json:"short_url"`
+}
+
+// InputDelete defines input json format for /api/user/urls endpoint
+type InputDelete struct {
+	ShortID model.ShortID
 }
 
 type gzipWriter struct {

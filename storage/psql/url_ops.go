@@ -8,13 +8,14 @@ import (
 	"github.com/evgenv123/go-shortener/storage"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
+	"time"
 )
 
 // GetFullByID implements storage.URLReader interface
 func (st Storage) GetFullByID(ctx context.Context, shortURLID model.ShortID) (*model.ShortenedURL, error) {
 	res := ShortenedURL{ShortURL: int(shortURLID)}
-	query := "SELECT full_url,user_id FROM " + TableName + " WHERE short_url_id=$1"
-	err := st.db.QueryRowContext(ctx, query, res.ShortURL).Scan(&res.LongURL, &res.UserID)
+	query := "SELECT full_url,user_id,deleted_at FROM " + TableName + " WHERE short_url_id=$1"
+	err := st.db.QueryRowContext(ctx, query, res.ShortURL).Scan(&res.LongURL, &res.UserID, &res.DeletedAt)
 	if err != nil {
 		// If FULL URL not found return custom error
 		if errors.Is(err, sql.ErrNoRows) {
@@ -31,8 +32,8 @@ func (st Storage) GetFullByID(ctx context.Context, shortURLID model.ShortID) (*m
 // Returns sql.ErrNoRows if not found
 func (st Storage) GetIDByFull(ctx context.Context, fullURL string) (*model.ShortenedURL, error) {
 	res := ShortenedURL{LongURL: fullURL}
-	query := "SELECT short_url_id,user_id FROM " + TableName + " WHERE full_url=$1"
-	err := st.db.QueryRowContext(ctx, query, res.LongURL).Scan(&res.ShortURL, &res.UserID)
+	query := "SELECT short_url_id,user_id,deleted_at FROM " + TableName + " WHERE full_url=$1 and deleted_at IS NULL"
+	err := st.db.QueryRowContext(ctx, query, res.LongURL).Scan(&res.ShortURL, &res.UserID, &res.DeletedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +45,7 @@ func (st Storage) GetIDByFull(ctx context.Context, fullURL string) (*model.Short
 // GetUserURLs implements storage.URLReader interface
 func (st Storage) GetUserURLs(ctx context.Context, userID string) ([]model.ShortenedURL, error) {
 	var res ShortenedURLs
-	err := st.db.SelectContext(ctx, &res, "SELECT * FROM "+TableName+" WHERE user_id = $1", userID)
+	err := st.db.SelectContext(ctx, &res, "SELECT * FROM "+TableName+" WHERE user_id = $1 and deleted_at IS NULL", userID)
 	if err != nil {
 		// Looks like sqlx.SelectContext does not return error if we have empty result??
 		//if errors.Is(err, sql.ErrNoRows) {
@@ -66,7 +67,7 @@ func (st Storage) AddNewURL(ctx context.Context, url model.ShortenedURL) (model.
 	var result model.ShortenedURL
 	query := "INSERT INTO " + TableName + " VALUES ($1, $2, $3) RETURNING *"
 	err := st.db.QueryRowContext(ctx, query, int(url.ShortURL), url.LongURL, url.UserID).
-		Scan(&result.ShortURL, &result.LongURL, &result.UserID)
+		Scan(&result.ShortURL, &result.LongURL, &result.UserID, &result.DeletedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -104,4 +105,12 @@ func (st Storage) AddBatchURL(ctx context.Context, urls []model.ShortenedURL) er
 	}
 
 	return tx.Commit()
+}
+
+// DeleteURL implements storage.URLWriter interface
+func (st Storage) DeleteURL(ctx context.Context, url model.ShortenedURL) error {
+	query := "UPDATE " + TableName + " SET deleted_at = $1 WHERE short_url_id = $2"
+
+	_, err := st.db.ExecContext(ctx, query, time.Now(), url.ShortURL)
+	return err
 }

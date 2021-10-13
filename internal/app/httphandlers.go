@@ -210,3 +210,38 @@ func MyHandlerPing(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
 }
+
+// MyHandlerDelete is a handler for /api/user/urls endpoint
+func MyHandlerDelete(w http.ResponseWriter, r *http.Request) {
+	var input []InputDelete
+
+	// reading request body
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Cannot decode request body!", http.StatusInternalServerError)
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), appConf.CtxTimeout*time.Second)
+	defer cancel()
+	// Getting full objects from storage using provided model.ShortID
+	var recvdObjects []model.ShortenedURL
+	currentUserID := r.Context().Value(ContextKeyUserID).(string)
+	for _, v := range input {
+		if obj, err := URLSvc.GetObjFromShortID(ctx, v.ShortID); err == nil {
+			// Checking Authorization
+			if obj.UserID != currentUserID {
+				http.Error(w, "Only owner can delete its records!", http.StatusForbidden)
+				return
+			}
+			recvdObjects = append(recvdObjects, *obj)
+		} else {
+			http.Error(w, "Cannot get objects from DB! "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	if err := URLSvc.DeleteBatchURL(ctx, recvdObjects); err != nil {
+		http.Error(w, "Cannot delete objects! "+err.Error(), http.StatusInternalServerError)
+		return
+	} else {
+		w.WriteHeader(http.StatusAccepted)
+	}
+}

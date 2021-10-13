@@ -42,6 +42,7 @@ func main() {
 	r.Get("/ping", app.MyHandlerPing)
 	r.Post("/api/shorten/batch", app.MyHandlerShortenBatch)
 	r.Post("/api/shorten", app.MyHandlerShorten)
+	r.Delete("/api/user/urls", app.MyHandlerDelete)
 
 	srv := &http.Server{
 		Addr:    conf.ServerAddr,
