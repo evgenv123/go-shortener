@@ -3,9 +3,11 @@ package app
 import (
 	"encoding/json"
 	"github.com/evgenv123/go-shortener/internal/config"
+	"github.com/evgenv123/go-shortener/model"
 	"github.com/evgenv123/go-shortener/service"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 var appConf config.Config
@@ -38,16 +40,23 @@ type OutputBatch struct {
 }
 
 // InputDelete defines input json format for /api/user/urls endpoint
-type InputDelete struct {
-	ShortID int
-}
+type InputDelete model.ShortID
 
 func (inp *InputDelete) UnmarshalJSON(data []byte) error {
-	var v []interface{}
+	var v interface{}
 	if err := json.Unmarshal(data, &v); err != nil {
 		return err
 	}
-	inp.ShortID = v[0].(int)
+	switch t := v.(type) {
+	case int:
+		*inp = InputDelete(t)
+	case string:
+		i, err := strconv.Atoi(t)
+		if err != nil {
+			return err
+		}
+		*inp = InputDelete(i)
+	}
 
 	return nil
 }
