@@ -8,6 +8,7 @@ import (
 	"github.com/evgenv123/go-shortener/service"
 	"github.com/go-chi/chi/v5"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -238,11 +239,13 @@ func MyHandlerDelete(w http.ResponseWriter, r *http.Request) {
 			}
 			recvdObjects = append(recvdObjects, *obj)
 		} else {
+			log.Println("Cannot get objects from DB! " + err.Error())
 			http.Error(w, "Cannot get objects from DB! "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
 	if err := URLSvc.DeleteBatchURL(ctx, recvdObjects); err != nil {
+		log.Println("Cannot delete objects! " + err.Error())
 		http.Error(w, "Cannot delete objects! "+err.Error(), http.StatusInternalServerError)
 		return
 	} else {
