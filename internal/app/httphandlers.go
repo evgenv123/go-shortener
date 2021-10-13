@@ -232,7 +232,7 @@ func MyHandlerDelete(w http.ResponseWriter, r *http.Request) {
 	var recvdObjects []model.ShortenedURL
 	currentUserID := r.Context().Value(ContextKeyUserID).(string)
 	for _, v := range input {
-		if obj, err := URLSvc.GetObjFromShortID(ctx, model.ShortID(v)); err == nil {
+		if obj, err := URLSvc.GetObjFromShortID(ctx, model.ShortID(v.ShortID)); err == nil {
 			// Checking Authorization
 			if obj.UserID != currentUserID {
 				http.Error(w, "Only owner can delete its records!", http.StatusForbidden)
