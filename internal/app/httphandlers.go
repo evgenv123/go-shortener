@@ -25,12 +25,16 @@ func MyHandlerGetID(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), appConf.CtxTimeout*time.Second)
 	defer cancel()
 	obj, err2 := URLSvc.GetObjFromShortID(ctx, model.ShortID(requestedID))
-	if err2 != nil {
+	switch {
+	case errors.Is(err2, service.ErrItemDeleted):
+		http.Error(w, "Object deleted!", http.StatusGone)
+		return
+	case err2 != nil:
 		http.Error(w, "Error finding object for short id!", http.StatusBadRequest)
 		return
+	default:
+		http.Redirect(w, r, obj.LongURL, http.StatusTemporaryRedirect)
 	}
-
-	http.Redirect(w, r, obj.LongURL, http.StatusTemporaryRedirect)
 }
 
 // MyHandlerListUrls is for getting all URLS for specified user

@@ -2,6 +2,7 @@ package gob
 
 import (
 	"github.com/evgenv123/go-shortener/model"
+	"github.com/evgenv123/go-shortener/storage"
 	"time"
 )
 
@@ -27,6 +28,9 @@ func (long LongURL) ToCanonical(short model.ShortID) (model.ShortenedURL, error)
 		UserID:    long.UserID,
 		DeletedAt: long.DeletedAt,
 	}
-
-	return result, nil
+	if !long.DeletedAt.IsZero() {
+		return result, storage.ErrItemDeleted
+	} else {
+		return result, nil
+	}
 }

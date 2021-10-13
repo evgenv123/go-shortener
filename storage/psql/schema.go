@@ -3,6 +3,7 @@ package psql
 import (
 	"database/sql"
 	"github.com/evgenv123/go-shortener/model"
+	"github.com/evgenv123/go-shortener/storage"
 )
 
 const (
@@ -54,6 +55,10 @@ func (u ShortenedURL) ToCanonical() (model.ShortenedURL, error) {
 		UserID:    u.UserID,
 		DeletedAt: u.DeletedAt.Time,
 	}
+	if u.DeletedAt.Valid {
+		return ret, storage.ErrItemDeleted
+	} else {
+		return ret, nil
+	}
 
-	return ret, nil
 }
