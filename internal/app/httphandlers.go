@@ -218,7 +218,7 @@ func MyHandlerPing(w http.ResponseWriter, r *http.Request) {
 
 // MyHandlerDelete is a handler for /api/user/urls endpoint
 func MyHandlerDelete(w http.ResponseWriter, r *http.Request) {
-	var input []InputDelete
+	var input []model.ShortID
 
 	// reading request body
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -232,7 +232,7 @@ func MyHandlerDelete(w http.ResponseWriter, r *http.Request) {
 	var recvdObjects []model.ShortenedURL
 	currentUserID := r.Context().Value(ContextKeyUserID).(string)
 	for _, v := range input {
-		if obj, err := URLSvc.GetObjFromShortID(ctx, model.ShortID(v)); err == nil {
+		if obj, err := URLSvc.GetObjFromShortID(ctx, v); err == nil {
 			// Checking Authorization
 			if obj.UserID != currentUserID {
 				http.Error(w, "Only owner can delete its records!", http.StatusForbidden)
