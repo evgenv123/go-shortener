@@ -222,6 +222,7 @@ func MyHandlerDelete(w http.ResponseWriter, r *http.Request) {
 
 	// reading request body
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		log.Println("Cannot decode request body! " + err.Error())
 		http.Error(w, "Cannot decode request body!", http.StatusInternalServerError)
 		return
 	}
@@ -231,7 +232,7 @@ func MyHandlerDelete(w http.ResponseWriter, r *http.Request) {
 	var recvdObjects []model.ShortenedURL
 	currentUserID := r.Context().Value(ContextKeyUserID).(string)
 	for _, v := range input {
-		if obj, err := URLSvc.GetObjFromShortID(ctx, v.ShortID); err == nil {
+		if obj, err := URLSvc.GetObjFromShortID(ctx, model.ShortID(v)); err == nil {
 			// Checking Authorization
 			if obj.UserID != currentUserID {
 				http.Error(w, "Only owner can delete its records!", http.StatusForbidden)

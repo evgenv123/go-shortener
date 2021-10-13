@@ -38,9 +38,7 @@ type OutputBatch struct {
 }
 
 // InputDelete defines input json format for /api/user/urls endpoint
-type InputDelete struct {
-	ShortID model.ShortID
-}
+type InputDelete model.ShortID
 
 type gzipWriter struct {
 	http.ResponseWriter
