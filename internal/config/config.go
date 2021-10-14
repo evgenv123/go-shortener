@@ -82,19 +82,21 @@ func (c Config) BuildURLService() (*service.Processor, error) {
 	var err error
 	// Choosing storage depending on configuration info
 	if c.OperationMode == OPModeFile {
-		//st = st.(gob.Storage)
 		st, err = c.BuildGOBStorage()
 		if err != nil {
 			return nil, err
 		}
 	} else if c.OperationMode == OPModePGSQL {
-		//st = st.(psql.Storage)
 		st, err = c.BuildPSQLStorage()
 		if err != nil {
 			return nil, err
 		}
 	}
-	svcConfig := service.Config{BaseURL: c.BaseURL, HexSecret: c.HexSecret}
+	svcConfig := service.Config{
+		BaseURL:            c.BaseURL,
+		HexSecret:          c.HexSecret,
+		WorkerFlushTimeout: c.CtxTimeout,
+	}
 	svc, err := service.New(svcConfig, st)
 	if err != nil {
 		return nil, err

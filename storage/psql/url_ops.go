@@ -113,3 +113,33 @@ func (st Storage) DeleteURL(ctx context.Context, url model.ShortenedURL) error {
 	_, err := st.db.ExecContext(ctx, query, time.Now(), url.ShortURL)
 	return err
 }
+
+// DeleteBatchURL implements storage.URLWriter interface
+func (st Storage) DeleteBatchURL(ctx context.Context, urls []model.ShortenedURL) error {
+	if len(urls) == 0 {
+		return nil
+	}
+	query := "UPDATE " + TableName + " SET deleted_at = $1 WHERE short_url_id = $2"
+
+	// Starting transaction
+	tx, err := st.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Defining statement
+	stmt, err := tx.PrepareContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, v := range urls {
+		if _, err = stmt.ExecContext(ctx, time.Now(), v.ShortURL); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}

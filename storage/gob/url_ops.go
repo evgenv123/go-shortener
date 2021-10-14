@@ -55,6 +55,7 @@ func (st *Storage) GetIDByFull(ctx context.Context, fullURL string) (*model.Shor
 			return &result, err
 		}
 	}
+
 	return nil, errors.New("no item found for full url: " + fullURL)
 }
 
@@ -92,4 +93,15 @@ func (st *Storage) DeleteURL(ctx context.Context, url model.ShortenedURL) error 
 	} else {
 		return errors.New("error accessing DB object")
 	}
+}
+
+// DeleteURL implements storage.URLWriter interface
+func (st *Storage) DeleteBatchURL(ctx context.Context, urls []model.ShortenedURL) error {
+	for _, v := range urls {
+		if err := st.DeleteURL(ctx, v); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

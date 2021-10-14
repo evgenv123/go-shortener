@@ -1,5 +1,5 @@
-# go-musthave-shortener-tpl
-Шаблон репозитория для практического трек "Веб-разработка на Go"
+# go-shortener
+Репозиторий для практического трека "Веб-разработка на Go"
 
 # Начало работы
 
@@ -20,4 +20,4 @@ git remote add -m main template https://github.com/yandex-praktikum/go-musthave-
 git fetch template && git checkout template/main .github
 ```
 
-затем добавьте полученые изменения в свой репозиторий.
+затем добавьте полученные изменения в свой репозиторий.

@@ -109,10 +109,10 @@ func (svc *Processor) ShortenURL(ctx context.Context, fullURL string, userID str
 
 // DeleteBatchURL asynchronously deletes urls from DB
 func (svc *Processor) DeleteBatchURL(ctx context.Context, urls []model.ShortenedURL) error {
-	for _, v := range urls {
-		if err := svc.urlStorage.DeleteURL(ctx, v); err != nil {
-			return err
+	go func() {
+		for _, v := range urls {
+			svc.deleteCh <- v
 		}
-	}
+	}()
 	return nil
 }
