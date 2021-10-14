@@ -53,7 +53,7 @@ func New(c Config, st StorageExpected) (*Processor, error) {
 	// Starting workers
 	for i := 0; i < c.WorkerThreads; i++ {
 		// Making workers out of sync
-		go proc.DeleteWorker(time.Tick(c.WorkerFlushTimeout+time.Second*time.Duration(i)), i)
+		go proc.DeleteWorker(time.NewTicker(c.WorkerFlushTimeout+time.Second*time.Duration(i)), i)
 	}
 	return &proc, nil
 }

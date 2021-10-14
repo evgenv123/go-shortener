@@ -8,25 +8,25 @@ import (
 )
 
 // DeleteWorker is asynchronous goroutine
-func (svc *Processor) DeleteWorker(tickerCh <-chan time.Time, workerId int) {
+func (svc *Processor) DeleteWorker(ticker *time.Ticker, workerID int) {
 	var buffer []model.ShortenedURL
 	for {
 		select {
 		case item := <-svc.deleteCh:
 			buffer = append(buffer, item)
-		case <-tickerCh:
-			log.Printf("Worker #%v:  flushing buffer\n", workerId)
+		case <-ticker.C:
+			log.Printf("Worker #%v:  flushing buffer\n", workerID)
 			// Flushing after worker timeout
 			if err := svc.urlStorage.DeleteBatchURL(context.Background(), buffer); err != nil {
-				log.Printf("Worker #%v:  error batch deleting urls\n", workerId)
+				log.Printf("Worker #%v:  error batch deleting urls\n", workerID)
 			}
 			buffer = nil
 		case <-svc.workerCtx.Done():
 			if err := svc.urlStorage.DeleteBatchURL(context.Background(), buffer); err != nil {
-				log.Printf("Worker #%v:  error batch deleting urls\n", workerId)
+				log.Printf("Worker #%v:  error batch deleting urls\n", workerID)
 			}
 			buffer = nil
-			log.Printf("Worker #%v:  gracefully stopped DeleteWorker\n", workerId)
+			log.Printf("Worker #%v:  gracefully stopped DeleteWorker\n", workerID)
 			return
 		}
 	}
