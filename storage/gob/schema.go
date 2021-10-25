@@ -1,6 +1,10 @@
 package gob
 
-import "github.com/evgenv123/go-shortener/model"
+import (
+	"github.com/evgenv123/go-shortener/model"
+	"github.com/evgenv123/go-shortener/storage"
+	"time"
+)
 
 type (
 	// ShortenedURLs represents model.ShortenedURL canonical model for GOB storage
@@ -9,7 +13,24 @@ type (
 	}
 
 	LongURL struct {
-		URL    string
-		UserID string
+		URL       string
+		UserID    string
+		DeletedAt time.Time
 	}
 )
+
+// ToCanonical converts LongURL to canonical model.ShortenedURL using parameter model.ShortID
+func (long LongURL) ToCanonical(short model.ShortID) (model.ShortenedURL, error) {
+	// Converting to canonical model
+	result := model.ShortenedURL{
+		ShortURL:  short,
+		LongURL:   long.URL,
+		UserID:    long.UserID,
+		DeletedAt: long.DeletedAt,
+	}
+	if !long.DeletedAt.IsZero() {
+		return result, storage.ErrItemDeleted
+	} else {
+		return result, nil
+	}
+}

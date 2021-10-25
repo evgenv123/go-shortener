@@ -68,11 +68,11 @@ func (c Config) BuildGOBStorage() (*gob.Storage, error) {
 	return st, nil
 }
 
-func (c Config) BuildPSQLStorage() (*psql.Storage, error) {
+func (c Config) BuildPSQLStorage() (psql.Storage, error) {
 	psqlConf := psql.Config{DSN: c.DBSource}
 	st, err := psql.New(psqlConf)
 	if err != nil {
-		return nil, fmt.Errorf("error building PSQL storage: %w", err)
+		return st, fmt.Errorf("error building PSQL storage: %w", err)
 	}
 	return st, nil
 }
@@ -82,19 +82,21 @@ func (c Config) BuildURLService() (*service.Processor, error) {
 	var err error
 	// Choosing storage depending on configuration info
 	if c.OperationMode == OPModeFile {
-		//st = st.(gob.Storage)
 		st, err = c.BuildGOBStorage()
 		if err != nil {
 			return nil, err
 		}
 	} else if c.OperationMode == OPModePGSQL {
-		//st = st.(psql.Storage)
 		st, err = c.BuildPSQLStorage()
 		if err != nil {
 			return nil, err
 		}
 	}
-	svcConfig := service.Config{BaseURL: c.BaseURL, HexSecret: c.HexSecret}
+	svcConfig := service.Config{
+		BaseURL:            c.BaseURL,
+		HexSecret:          c.HexSecret,
+		WorkerFlushTimeout: c.CtxTimeout,
+	}
 	svc, err := service.New(svcConfig, st)
 	if err != nil {
 		return nil, err

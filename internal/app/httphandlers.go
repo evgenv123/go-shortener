@@ -8,6 +8,7 @@ import (
 	"github.com/evgenv123/go-shortener/service"
 	"github.com/go-chi/chi/v5"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -25,12 +26,16 @@ func MyHandlerGetID(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), appConf.CtxTimeout*time.Second)
 	defer cancel()
 	obj, err2 := URLSvc.GetObjFromShortID(ctx, model.ShortID(requestedID))
-	if err2 != nil {
+	switch {
+	case errors.Is(err2, service.ErrItemDeleted):
+		http.Error(w, "Object deleted!", http.StatusGone)
+		return
+	case err2 != nil:
 		http.Error(w, "Error finding object for short id!", http.StatusBadRequest)
 		return
+	default:
+		http.Redirect(w, r, obj.LongURL, http.StatusTemporaryRedirect)
 	}
-
-	http.Redirect(w, r, obj.LongURL, http.StatusTemporaryRedirect)
 }
 
 // MyHandlerListUrls is for getting all URLS for specified user
@@ -208,5 +213,43 @@ func MyHandlerPing(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		w.WriteHeader(http.StatusOK)
+	}
+}
+
+// MyHandlerDelete is a handler for /api/user/urls endpoint
+func MyHandlerDelete(w http.ResponseWriter, r *http.Request) {
+	var input []model.ShortID
+
+	// reading request body
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		log.Println("Cannot decode request body! " + err.Error())
+		http.Error(w, "Cannot decode request body!", http.StatusInternalServerError)
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), appConf.CtxTimeout*time.Second)
+	defer cancel()
+	// Getting full objects from storage using provided model.ShortID
+	var recvdObjects []model.ShortenedURL
+	currentUserID := r.Context().Value(ContextKeyUserID).(string)
+	for _, v := range input {
+		if obj, err := URLSvc.GetObjFromShortID(ctx, v); err == nil {
+			// Checking Authorization
+			if obj.UserID != currentUserID {
+				http.Error(w, "Only owner can delete its records!", http.StatusForbidden)
+				return
+			}
+			recvdObjects = append(recvdObjects, *obj)
+		} else {
+			log.Println("Cannot get objects from DB! " + err.Error())
+			http.Error(w, "Cannot get objects from DB! "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	if err := URLSvc.DeleteBatchURL(ctx, recvdObjects); err != nil {
+		log.Println("Cannot delete objects! " + err.Error())
+		http.Error(w, "Cannot delete objects! "+err.Error(), http.StatusInternalServerError)
+		return
+	} else {
+		w.WriteHeader(http.StatusAccepted)
 	}
 }

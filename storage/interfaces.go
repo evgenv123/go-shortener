@@ -31,4 +31,6 @@ type URLWriter interface {
 	AddBatchURL(ctx context.Context, urls []model.ShortenedURL) error
 	// Ping checks if the storage is online
 	Ping(ctx context.Context) bool
+	DeleteURL(ctx context.Context, url model.ShortenedURL) error
+	DeleteBatchURL(ctx context.Context, urls []model.ShortenedURL) error
 }
